@@ -33,9 +33,12 @@ export default function CameraCapture({ onCapture }) {
 
   return (
     <div className="capture-container fade-in" style={styles.container}>
-      <header style={styles.header}>
+      <header style={{ textAlign: 'center', marginBottom: '32px', padding: '0 12px' }}>
         <h1 style={styles.title}>NourishAI</h1>
         <p style={styles.subtitle}>智能记录你的健康饮食</p>
+        <p style={{ fontSize: '12px', color: 'var(--accent-green)', marginTop: '12px', opacity: 0.8, letterSpacing: '0.5px' }}>
+          祝你们健康，我的家人！——刘钟泽
+        </p>
       </header>
 
       {/* 隐藏的真实文件输入框 */}
