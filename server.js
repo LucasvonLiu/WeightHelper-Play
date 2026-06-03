@@ -302,7 +302,7 @@ app.post('/api/coach', authenticateToken, async (req, res) => {
 });
 
 // 所有其他未匹配的 GET 请求，都返回前端的 index.html (SPA 路由支持)
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
