@@ -331,7 +331,7 @@ app.post('/api/coach', authenticateToken, async (req, res) => {
     res.json({ advice: result.response.text(), tokensUsedThisRequest: tokens });
   } catch (error) {
     console.error("获取点评失败:", error);
-    res.status(500).json({ error: "获取点评失败", details: error.message, stack: error.stack });
+    res.status(500).json({ error: "获取点评失败" });
   }
 });
 
