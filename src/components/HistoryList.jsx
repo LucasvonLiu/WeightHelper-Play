@@ -74,15 +74,6 @@ export default function HistoryList({ goal, token }) {
   const progress = Math.min((totals.calories / goal) * 100, 100);
 
   const getAIAdvice = async () => {
-    const todayStr = formatDate(new Date());
-    const usageKey = `ai_coach_usage_${todayStr}`;
-    const usageCount = Number(localStorage.getItem(usageKey)) || 0;
-    
-    if (usageCount >= 1) {
-      setShowPaywall(true);
-      return;
-    }
-
     try {
       setLoadingAdvice(true);
       const res = await fetch('/api/coach', {
@@ -95,10 +86,6 @@ export default function HistoryList({ goal, token }) {
       });
       const data = await res.json();
       setAiAdvice(data.advice || "AI 暂时无法给出建议。");
-      
-      if (res.ok) {
-        localStorage.setItem(usageKey, usageCount + 1);
-      }
     } catch (error) {
       console.error(error);
       alert("获取建议失败");
