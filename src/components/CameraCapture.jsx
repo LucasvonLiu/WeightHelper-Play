@@ -33,7 +33,7 @@ export default function CameraCapture({ onCapture }) {
 
   return (
     <div className="capture-container fade-in" style={styles.container}>
-      <header style={{ textAlign: 'center', marginBottom: '32px', padding: '0 12px' }}>
+      <header style={{ textAlign: 'center', marginBottom: '20px', padding: '0 12px' }}>
         <h1 style={{ fontSize: '18px', fontWeight: '500', color: 'var(--accent-green)', letterSpacing: '1px' }}>
           祝你们健康，我的家人！<br />
           <span style={{ fontSize: '14px', opacity: 0.8, display: 'inline-block', marginTop: '8px' }}>——刘钟泽</span>
@@ -69,11 +69,11 @@ export default function CameraCapture({ onCapture }) {
 
 const styles = {
   container: {
-    padding: '40px 24px 88px 24px',
+    padding: '8px 24px 88px 24px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    minHeight: '100vh',
+    height: 'calc(100vh - 120px)'
   },
   header: {
     textAlign: 'center',
@@ -91,7 +91,9 @@ const styles = {
   },
   uploadArea: {
     width: '100%',
-    aspectRatio: '1',
+    flex: 1,
+    minHeight: '220px',
+    maxHeight: '320px',
     backgroundColor: 'var(--card-bg)',
     borderRadius: 'var(--border-radius)',
     boxShadow: 'var(--shadow-sm)',
@@ -111,7 +113,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: '20px',
+    marginBottom: '16px',
   },
   uploadTitle: {
     fontSize: '18px',
