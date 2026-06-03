@@ -281,10 +281,10 @@ app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
 // 获取用户 Token 消耗状态
 app.get('/api/user/status', authenticateToken, async (req, res) => {
   try {
-    const user = await db.get('SELECT totalTokensUsed FROM users WHERE id = ?', [req.user.userId]);
+    const result = await db.get('SELECT SUM(totalTokensUsed) as total FROM users');
     res.json({ 
       model: 'gemini-2.5-flash', 
-      totalTokensUsed: user?.totalTokensUsed || 0 
+      totalTokensUsed: result?.total || 0 
     });
   } catch (error) {
     res.status(500).json({ error: "获取状态失败" });
