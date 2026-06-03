@@ -1,0 +1,16 @@
+{
+  "name": "WeightHelper",
+  "short_name": "WeightHelper",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#89a896",
+  "description": "你的智能饮食伴侣",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}
