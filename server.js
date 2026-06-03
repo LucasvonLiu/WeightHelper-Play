@@ -224,12 +224,12 @@ app.post('/api/meals', authenticateToken, async (req, res) => {
 app.get('/api/meals', authenticateToken, async (req, res) => {
   try {
     const targetDate = req.query.date;
-    const dateCondition = targetDate ? `'${targetDate}'` : `date('now', 'localtime')`;
+    const dateCondition = targetDate ? `'${targetDate}'` : `date('now', '+8 hours')`;
     const userId = req.user.userId;
 
     const meals = await db.all(`
       SELECT * FROM meals 
-      WHERE userId = ? AND date(createdAt, 'localtime') = ${dateCondition}
+      WHERE userId = ? AND date(createdAt, '+8 hours') = ${dateCondition}
       ORDER BY createdAt DESC
     `, [userId]);
     
