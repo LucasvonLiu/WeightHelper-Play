@@ -71,6 +71,12 @@ let db;
     } catch (e) {
       // 字段已存在则忽略
     }
+    
+    // 自动添加 tokens 统计列
+    try {
+      await db.exec(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`);
+    } catch (e) {}
+
     console.log("✅ 数据库初始化成功");
   } catch (err) {
     console.error("❌ 数据库初始化失败:", err);
@@ -140,6 +146,16 @@ app.post('/api/analyze', async (req, res) => {
 
     const responseText = result.response.text();
     const nutritionData = JSON.parse(responseText);
+
+    const tokens = result.response.usageMetadata?.totalTokenCount || 0;
+    if (tokens > 0 && req.headers['authorization']) {
+        const token = req.headers['authorization'].split(' ')[1];
+        jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+            if (!err) {
+                await db.run('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, decoded.userId]);
+            }
+        });
+    }
 
     res.json(nutritionData);
   } catch (error) {
@@ -262,6 +278,19 @@ app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// 获取用户 Token 消耗状态
+app.get('/api/user/status', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.get('SELECT totalTokensUsed FROM users WHERE id = ?', [req.user.userId]);
+    res.json({ 
+      model: 'gemini-2.5-flash', 
+      totalTokensUsed: user?.totalTokensUsed || 0 
+    });
+  } catch (error) {
+    res.status(500).json({ error: "获取状态失败" });
+  }
+});
+
 // --- AI 营养师点评接口 ---
 app.post('/api/coach', authenticateToken, async (req, res) => {
   try {
@@ -293,8 +322,13 @@ app.post('/api/coach', authenticateToken, async (req, res) => {
         temperature: 0.7, // 点评需要多一点创造力和情感
       }
     });
+    
+    const tokens = result.response.usageMetadata?.totalTokenCount || 0;
+    if (tokens > 0 && req.user) {
+      await db.run('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, req.user.userId]);
+    }
 
-    res.json({ advice: result.response.text() });
+    res.json({ advice: result.response.text(), tokensUsedThisRequest: tokens });
   } catch (error) {
     console.error("获取点评失败:", error);
     res.status(500).json({ error: "获取点评失败" });
