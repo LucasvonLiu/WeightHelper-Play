@@ -15,7 +15,6 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
     const newDetails = [...editableData.details];
     newDetails[index] = { ...newDetails[index], amount: newAmount };
 
-    // Recalculate totals
     let totalCalories = 0;
     let totalProtein = 0;
     let totalCarbs = 0;
@@ -50,15 +49,12 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
       canvas.width = img.width;
       canvas.height = img.height;
       
-      // 1. 绘制原图
       ctx.drawImage(img, 0, 0, img.width, img.height);
       
-      // 2. 动态计算版面尺寸 (根据文字长度，极简紧凑)
       const padding = Math.max(img.width * 0.025, 12);
       const baseFont = Math.max(img.width * 0.025, 12);
       const macroText = `碳水 ${editableData.carbs}g · 蛋白 ${editableData.protein}g · 脂肪 ${editableData.fats}g`;
       
-      // 测量文本宽度
       ctx.font = `900 ${baseFont * 1.3}px sans-serif`;
       const nameWidth = ctx.measureText(editableData.foodName).width;
       ctx.font = `900 ${baseFont * 1.8}px sans-serif`;
@@ -67,19 +63,17 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
       const macroWidth = ctx.measureText(macroText).width;
       
       const contentWidth = Math.max(nameWidth, calWidth, macroWidth);
-      // 紧凑的背景框
       const boxWidth = contentWidth + padding * 2;
       const boxHeight = padding * 2 + baseFont * 3.8; 
       
       const boxX = img.width - boxWidth - padding;
       const boxY = img.height - boxHeight - padding;
       
-      // 3. 背景颜色采样，决定深色还是浅色主题
       let isLightBg = false;
       try {
         const imageData = ctx.getImageData(boxX, boxY, boxWidth, boxHeight);
         let r = 0, g = 0, b = 0;
-        const step = 4 * 10; // 每 10 个像素采样一次
+        const step = 4 * 10; 
         let count = 0;
         for (let i = 0; i < imageData.data.length; i += step) {
           r += imageData.data[i];
@@ -87,26 +81,22 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
           b += imageData.data[i+2];
           count++;
         }
-        // 计算区域平均亮度 (0-255)
         const brightness = (0.299 * (r/count) + 0.587 * (g/count) + 0.114 * (b/count));
-        isLightBg = brightness > 120; // 亮度大于 120 判定为浅色背景
+        isLightBg = brightness > 120; 
       } catch(e) {
         console.warn("背景颜色采样失败", e);
       }
 
-      // 4. 绘制动态自适应的毛玻璃框
       const cornerRadius = Math.floor(Math.min(boxWidth, boxHeight) * 0.1);
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(boxX, boxY, boxWidth, boxHeight, [cornerRadius]);
       ctx.clip();
 
-      // 毛玻璃滤镜
       ctx.filter = 'blur(25px) saturate(140%)';
       ctx.drawImage(img, 0, 0, img.width, img.height);
       ctx.filter = 'none';
 
-      // 动态遮罩，深底色用黑遮罩，浅底色用白遮罩
       const gradient = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
       if (isLightBg) {
         gradient.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
@@ -118,20 +108,17 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      // 玻璃边缘反光
       ctx.lineWidth = 2;
       ctx.strokeStyle = isLightBg ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.25)';
       ctx.stroke();
       ctx.restore();
       
-      // 5. 绘制文字 (根据深浅主题自动反色，紧凑排版)
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       
       const textX = boxX + padding;
       let textY = boxY + padding;
       
-      // 食物名
       ctx.fillStyle = isLightBg ? '#111111' : '#ffffff';
       ctx.font = `900 ${baseFont * 1.3}px sans-serif`;
       ctx.shadowColor = isLightBg ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
@@ -139,25 +126,21 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
       ctx.shadowOffsetY = 1;
       ctx.fillText(editableData.foodName, textX, textY);
       
-      // 总热量
       textY += baseFont * 1.6;
       ctx.font = `900 ${baseFont * 1.8}px sans-serif`;
       ctx.fillStyle = isLightBg ? '#1b4010' : '#8deb75';
       ctx.shadowBlur = 2;
       ctx.fillText(`${editableData.calories} kcal`, textX, textY);
       
-      // 三大宏量营养素
       textY += baseFont * 2.1;
       ctx.font = `600 ${baseFont * 0.85}px sans-serif`;
       ctx.fillStyle = isLightBg ? '#444444' : '#dddddd';
       ctx.shadowColor = 'transparent';
       ctx.fillText(macroText, textX, textY);
       
-      // 6. 导出逻辑：区分移动端和桌面端
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
       if (isMobile) {
-        // 移动端：尝试原生分享面板 (iOS有“存储图像”按钮)，或降级为长按保存
         canvas.toBlob(async (blob) => {
           const file = new File([blob], 'WeightHelper_Poster.jpg', { type: 'image/jpeg' });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -167,17 +150,14 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
                 title: '我的饮食打卡',
               });
             } catch (err) {
-              // 用户取消分享或分享失败，降级为弹窗长按保存
               console.error(err);
               setPosterUrl(canvas.toDataURL('image/jpeg', 0.9));
             }
           } else {
-            // 不支持 Share API，降级为弹窗长按保存
             setPosterUrl(canvas.toDataURL('image/jpeg', 0.9));
           }
         }, 'image/jpeg', 0.9);
       } else {
-        // 桌面端 (Mac/PC)：直接触发浏览器下载到“下载”文件夹
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         const link = document.createElement('a');
         link.download = `WeightHelper_Poster_${new Date().getTime()}.jpg`;
@@ -193,12 +173,22 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
 
   const totalMacros = (editableData.protein || 0) + (editableData.carbs || 0) + (editableData.fats || 0);
   
-  const getPercentage = (value) => totalMacros > 0 ? Math.round((value / totalMacros) * 100) + '%' : '0%';
+  const getPercentage = (value) => totalMacros > 0 ? Math.round((value / totalMacros) * 100) : 0;
+
+  const proteinPct = getPercentage(editableData.protein);
+  const carbsPct = getPercentage(editableData.carbs);
+  const fatsPct = getPercentage(editableData.fats);
+
+  // For SVG donut chart (circumference = 2 * PI * R)
+  // R = 36, C = 226.19
+  const C = 226.19;
+  const pOffset = C - (proteinPct / 100) * C;
+  const cOffset = C - (carbsPct / 100) * C;
+  const fOffset = C - (fatsPct / 100) * C;
 
   return (
     <div className="nutrition-card fade-in" style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>扫描分析结果</h2>
         <h3 style={styles.foodName}>{editableData.foodName}</h3>
       </div>
 
@@ -207,15 +197,28 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
           <span style={styles.calorieValue}>{editableData.calories}</span>
           <span style={styles.calorieUnit}>kcal</span>
         </div>
-        <div style={styles.macrosList}>
-          <MacroItem label="蛋白质" value={`${editableData.protein}g`} percentage={getPercentage(editableData.protein)} color="#A3BCA7" />
-          <MacroItem label="碳水" value={`${editableData.carbs}g`} percentage={getPercentage(editableData.carbs)} color="#D0D0C8" />
-          <MacroItem label="脂肪" value={`${editableData.fats}g`} percentage={getPercentage(editableData.fats)} color="#E6DFD3" />
+        
+        {/* 右侧：宏量营养素列表 + 简约环形图 */}
+        <div style={styles.macrosContainer}>
+          <div style={styles.macrosList}>
+            <MacroItem label="蛋白质" value={`${editableData.protein}g`} percentage={`${proteinPct}%`} color="#A3BCA7" />
+            <MacroItem label="碳水" value={`${editableData.carbs}g`} percentage={`${carbsPct}%`} color="#D0D0C8" />
+            <MacroItem label="脂肪" value={`${editableData.fats}g`} percentage={`${fatsPct}%`} color="#E6DFD3" />
+          </div>
+          
+          {/* 简约环形图 */}
+          <div style={styles.donutWrapper}>
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#f0f0f0" strokeWidth="8" />
+              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#A3BCA7" strokeWidth="8" strokeDasharray={C} strokeDashoffset={pOffset} transform="rotate(-90 40 40)" strokeLinecap="round" />
+              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#D0D0C8" strokeWidth="8" strokeDasharray={C} strokeDashoffset={cOffset} transform={`rotate(${-90 + (proteinPct/100)*360} 40 40)`} strokeLinecap="round" />
+              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#E6DFD3" strokeWidth="8" strokeDasharray={C} strokeDashoffset={fOffset} transform={`rotate(${-90 + ((proteinPct+carbsPct)/100)*360} 40 40)`} strokeLinecap="round" />
+            </svg>
+          </div>
         </div>
       </div>
 
       <div style={styles.detailsList}>
-        <h4 style={styles.detailsTitle}>食物成分与估算重量 (可手动微调)</h4>
         {editableData.details.map((item, index) => (
           <div key={index} style={styles.detailRow}>
             <span style={styles.detailName}>{item.name}</span>
@@ -234,12 +237,39 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
       </div>
 
       <div style={styles.actions}>
-        <button style={styles.primaryBtn} onClick={() => onSave(editableData)}>记录这一餐</button>
-        <button style={styles.posterBtn} onClick={generatePoster}>📸 生成打卡海报</button>
-        <button style={styles.secondaryBtn} onClick={onReset}>重新扫描</button>
+        <button style={styles.primaryBtn} onClick={() => onSave(editableData)}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <path d="M8 14h.01"></path>
+            <path d="M12 14h.01"></path>
+            <path d="M16 14h.01"></path>
+            <path d="M8 18h.01"></path>
+            <path d="M12 18h.01"></path>
+            <path d="M16 18h.01"></path>
+          </svg>
+          归档
+        </button>
+        <button style={styles.posterBtn} onClick={generatePoster}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          保存图片
+        </button>
+        <button style={styles.secondaryBtn} onClick={onReset}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <polyline points="23 20 23 14 17 14"></polyline>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+          </svg>
+          重新分析
+        </button>
       </div>
 
-      {/* 海报预览弹窗 (用于不支持 Share API 或用户取消分享时降级) */}
       {posterUrl && (
         <div style={styles.modalOverlay} onClick={() => setPosterUrl(null)}>
           <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
@@ -275,33 +305,29 @@ const styles = {
     flexDirection: 'column',
   },
   header: {
-    marginBottom: '32px',
-    paddingTop: '20px',
-  },
-  title: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-    marginBottom: '8px',
+    marginBottom: '24px',
+    paddingTop: '12px',
+    display: 'flex',
+    justifyContent: 'center'
   },
   foodName: {
     fontSize: '24px',
     color: 'var(--text-primary)',
     fontWeight: '600',
+    textAlign: 'center'
   },
   mainStats: {
     display: 'flex',
     alignItems: 'center',
-    gap: '24px',
-    marginBottom: '40px',
+    gap: '20px',
+    marginBottom: '32px',
     backgroundColor: 'var(--bg-color)',
-    padding: '20px',
-    borderRadius: 'var(--border-radius)',
+    padding: '24px',
+    borderRadius: '24px',
   },
   calorieCircle: {
-    width: '120px',
-    height: '120px',
+    width: '110px',
+    height: '110px',
     borderRadius: '50%',
     backgroundColor: 'var(--card-bg)',
     display: 'flex',
@@ -310,6 +336,7 @@ const styles = {
     alignItems: 'center',
     boxShadow: 'var(--shadow-sm)',
     border: '4px solid var(--accent-green)',
+    flexShrink: 0
   },
   calorieValue: {
     fontSize: '32px',
@@ -322,71 +349,79 @@ const styles = {
     color: 'var(--text-secondary)',
     marginTop: '4px',
   },
-  macrosList: {
+  macrosContainer: {
     flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  macrosList: {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
+  },
+  donutWrapper: {
+    width: '80px',
+    height: '80px',
+    flexShrink: 0,
+    marginLeft: '12px'
   },
   macroItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '10px',
   },
   macroColorDot: {
-    width: '12px',
-    height: '12px',
-    borderRadius: '4px',
+    width: '10px',
+    height: '10px',
+    borderRadius: '3px',
   },
   macroInfo: {
-    flex: 1,
     display: 'flex',
     flexDirection: 'column',
+    minWidth: '40px'
   },
   macroLabel: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: 'var(--text-secondary)',
   },
   macroValue: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
     color: 'var(--text-primary)',
   },
   macroPercentage: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '500',
     color: 'var(--text-secondary)',
+    marginLeft: 'auto'
   },
   detailsList: {
     marginBottom: 'auto',
-  },
-  detailsTitle: {
-    fontSize: '16px',
-    marginBottom: '16px',
-    color: 'var(--text-primary)',
   },
   detailRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px 0',
-    borderBottom: '1px solid #eee',
+    padding: '16px 12px',
+    borderBottom: '1px solid #f0f0f0',
   },
   detailName: {
     color: 'var(--text-primary)',
-    fontSize: '15px',
+    fontSize: '16px',
+    fontWeight: '500',
     flex: 1,
   },
   detailInputWrapper: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: '6px',
     backgroundColor: '#f5f5f5',
-    padding: '4px 12px',
-    borderRadius: '8px',
+    padding: '6px 12px',
+    borderRadius: '12px',
   },
   amountInput: {
-    width: '50px',
+    width: '46px',
     border: 'none',
     backgroundColor: 'transparent',
     fontSize: '16px',
@@ -406,31 +441,40 @@ const styles = {
     backgroundColor: 'var(--accent-green)',
     color: '#fff',
     padding: '16px',
-    borderRadius: '12px',
+    borderRadius: '16px',
     fontSize: '16px',
     fontWeight: '600',
     border: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   posterBtn: {
     backgroundColor: '#333',
     color: '#fff',
     padding: '16px',
-    borderRadius: '12px',
+    borderRadius: '16px',
     fontSize: '16px',
     fontWeight: '600',
     border: 'none',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   secondaryBtn: {
     backgroundColor: 'transparent',
     color: 'var(--text-secondary)',
     padding: '16px',
-    borderRadius: '12px',
+    borderRadius: '16px',
     fontSize: '16px',
     fontWeight: '500',
     border: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   modalOverlay: {
     position: 'fixed',
@@ -447,7 +491,7 @@ const styles = {
   },
   modalContent: {
     backgroundColor: 'var(--card-bg)',
-    borderRadius: '16px',
+    borderRadius: '20px',
     padding: '16px',
     display: 'flex',
     flexDirection: 'column',
@@ -457,7 +501,7 @@ const styles = {
   },
   posterPreview: {
     width: '100%',
-    borderRadius: '8px',
+    borderRadius: '12px',
     marginBottom: '16px',
   },
   modalTip: {
@@ -470,9 +514,9 @@ const styles = {
     backgroundColor: '#eee',
     color: 'var(--text-primary)',
     border: 'none',
-    padding: '12px 24px',
+    padding: '14px 24px',
     borderRadius: '24px',
-    fontSize: '14px',
+    fontSize: '15px',
     fontWeight: '600',
     cursor: 'pointer',
     width: '100%',
