@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 export default function Auth({ onAuthSuccess }) {
+  const [showIntro, setShowIntro] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -35,6 +36,21 @@ export default function Auth({ onAuthSuccess }) {
 
   return (
     <div style={styles.container}>
+      {showIntro && (
+        <div style={styles.modalOverlay} onClick={() => setShowIntro(false)}>
+          <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalIcon}>📸</div>
+            <h3 style={styles.modalTitle}>欢迎来到 WeightHelper</h3>
+            <p style={styles.modalText}>
+              只需拍下食物照片，AI 即可帮您秒算卡路里与三大营养素，轻松管理日常饮食！
+            </p>
+            <button style={styles.modalBtn} onClick={() => setShowIntro(false)}>
+              开始使用
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={styles.card}>
         <h2 style={styles.title}>{isLogin ? '欢迎回来' : '创建新账号'}</h2>
         <p style={styles.subtitle}>WeightHelper - 你的智能饮食伴侣</p>
@@ -144,5 +160,56 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
     marginLeft: '8px'
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    zIndex: 9999,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '24px',
+    animation: 'fadeIn 0.3s ease',
+  },
+  modalContent: {
+    backgroundColor: 'var(--card-bg)',
+    borderRadius: '24px',
+    padding: '32px 24px',
+    textAlign: 'center',
+    width: '100%',
+    maxWidth: '320px',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+    animation: 'slideUp 0.3s ease',
+  },
+  modalIcon: {
+    fontSize: '48px',
+    marginBottom: '16px',
+  },
+  modalTitle: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '12px',
+  },
+  modalText: {
+    fontSize: '15px',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.6',
+    marginBottom: '28px',
+  },
+  modalBtn: {
+    width: '100%',
+    backgroundColor: 'var(--accent-green)',
+    color: '#fff',
+    border: 'none',
+    padding: '16px',
+    borderRadius: '16px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
   }
 };
