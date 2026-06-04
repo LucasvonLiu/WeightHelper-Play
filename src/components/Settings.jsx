@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 
-export default function Settings({ currentGoal, onSaveGoal, currentTimezone, onSaveTimezone }) {
+export default function Settings({ currentGoal, currentTimezone, onSavePreferences }) {
   const [goal, setGoal] = useState(currentGoal);
   const [tz, setTz] = useState(currentTimezone || 'Asia/Shanghai');
 
   const handleSave = () => {
-    onSaveGoal(Number(goal));
-    onSaveTimezone(tz);
+    onSavePreferences(Number(goal), tz);
     alert("设置已保存！");
   };
 

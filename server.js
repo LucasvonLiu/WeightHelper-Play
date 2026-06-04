@@ -76,6 +76,8 @@ let pgPool;
       
       // 尝试添加 tokens 列 (容错处理)
       try { await pgPool.query(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`); } catch (e) {}
+      try { await pgPool.query(`ALTER TABLE users ADD COLUMN goal INTEGER DEFAULT 2000`); } catch (e) {}
+      try { await pgPool.query(`ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'Asia/Shanghai'`); } catch (e) {}
       
       console.log("✅ PostgreSQL 云数据库初始化成功");
     } else {
@@ -109,6 +111,8 @@ let pgPool;
       
       try { await db.exec(`ALTER TABLE meals ADD COLUMN userId INTEGER`); } catch (e) {}
       try { await db.exec(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`); } catch (e) {}
+      try { await db.exec(`ALTER TABLE users ADD COLUMN goal INTEGER DEFAULT 2000`); } catch (e) {}
+      try { await db.exec(`ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'Asia/Shanghai'`); } catch (e) {}
 
       console.log("✅ SQLite 本地数据库初始化成功");
     }
@@ -366,6 +370,29 @@ app.get('/api/user/status', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: "获取状态失败" });
+  }
+});
+
+// --- 个人偏好设置接口 ---
+app.get('/api/user/preferences', authenticateToken, async (req, res) => {
+  try {
+    const result = await dbGet('SELECT goal, timezone FROM users WHERE id = ' + (isPostgres ? '$1' : '?'), [req.user.userId]);
+    res.json({ goal: result?.goal || 2000, timezone: result?.timezone || 'Asia/Shanghai' });
+  } catch (error) {
+    res.status(500).json({ error: "获取设置失败" });
+  }
+});
+
+app.put('/api/user/preferences', authenticateToken, async (req, res) => {
+  try {
+    const { goal, timezone } = req.body;
+    await dbRun(
+      'UPDATE users SET goal = ' + (isPostgres ? '$1' : '?') + ', timezone = ' + (isPostgres ? '$2' : '?') + ' WHERE id = ' + (isPostgres ? '$3' : '?'),
+      [goal, timezone, req.user.userId]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "保存设置失败" });
   }
 });
 

@@ -36,6 +36,26 @@ function App() {
     fetchTokenStatus();
   }, [token, currentTab, appState]);
 
+  const fetchUserPreferences = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/user/preferences', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.goal) setGoal(data.goal);
+        if (data.timezone) setTimezone(data.timezone);
+        localStorage.setItem('weighthelper_goal', data.goal);
+        localStorage.setItem('weighthelper_timezone', data.timezone);
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    fetchUserPreferences();
+  }, [token]);
+
   const handleAuthSuccess = (newToken, newUsername) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('username', newUsername);
@@ -59,14 +79,24 @@ function App() {
     return localStorage.getItem('weighthelper_timezone') || 'Asia/Shanghai';
   });
 
-  const handleSaveGoal = (newGoal) => {
+  const handleSavePreferences = async (newGoal, newTz) => {
     setGoal(newGoal);
-    localStorage.setItem('weighthelper_goal', newGoal);
-  };
-
-  const handleSaveTimezone = (newTz) => {
     setTimezone(newTz);
+    localStorage.setItem('weighthelper_goal', newGoal);
     localStorage.setItem('weighthelper_timezone', newTz);
+
+    try {
+      await fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ goal: newGoal, timezone: newTz })
+      });
+    } catch (e) {
+      console.error('Failed to sync preferences', e);
+    }
   };
 
   // 当进入分析状态时，触发真实的后端 API 请求
@@ -198,9 +228,8 @@ function App() {
       {currentTab === 'settings' && (
         <Settings 
           currentGoal={goal} 
-          onSaveGoal={handleSaveGoal} 
           currentTimezone={timezone}
-          onSaveTimezone={handleSaveTimezone}
+          onSavePreferences={handleSavePreferences}
         />
       )}
 
