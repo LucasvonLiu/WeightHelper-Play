@@ -75,7 +75,6 @@ export default function HistoryList({ goal, token, timezone }) {
 
   return (
     <div className="fade-in" style={styles.container}>
-      <h2 style={styles.title}>历史追踪</h2>
       
       <div style={styles.calendarStrip}>
         {weekDates.map(date => {
@@ -126,7 +125,6 @@ export default function HistoryList({ goal, token, timezone }) {
 
 
       <div style={styles.mealsList}>
-        <h3 style={styles.listTitle}>饮食记录</h3>
         {meals.length === 0 ? (
           <p style={styles.emptyState}>今天还没有记录任何饮食哦～</p>
         ) : (

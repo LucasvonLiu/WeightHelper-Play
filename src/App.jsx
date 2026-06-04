@@ -191,13 +191,7 @@ function App() {
         </div>
       </div>
 
-      {/* 当前 AI 模型徽章 */}
-      <div style={{ padding: '0 24px', marginBottom: '16px', display: 'flex', justifyContent: 'center' }} className="fade-in">
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', backgroundColor: 'var(--card-bg)', borderRadius: '24px', fontSize: '12px', color: 'var(--text-secondary)', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}>
-          <span style={{ fontSize: '14px' }}>🧠</span> 
-          <span>当前 AI 模型：<strong style={{color: 'var(--accent-green)'}}>{tokenInfo.model}</strong></span>
-        </div>
-      </div>
+
 
       {currentTab === 'camera' && (
         <>
