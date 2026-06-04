@@ -193,7 +193,7 @@ function App() {
     <div className="app-wrapper">
       {/* 顶部简单的状态栏 */}
       <div style={{ padding: '40px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>WeightHelper <span style={{fontSize: '12px', color: 'var(--accent-green)', marginLeft: '4px'}}>v2.1.1</span></div>
+        <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>WeightHelper <span style={{fontSize: '12px', color: 'var(--accent-green)', marginLeft: '4px'}}>v2.1.2</span></div>
         <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
           {username} 
           <span onClick={handleLogout} style={{ color: 'var(--accent-green)', marginLeft: '12px', fontWeight: '600', cursor: 'pointer' }}>退出</span>
