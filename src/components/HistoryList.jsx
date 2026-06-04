@@ -197,10 +197,15 @@ export default function HistoryList({ goal, token, timezone }) {
           <div style={{width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', backgroundColor: 'var(--card-bg)', position: 'relative'}} onClick={e => e.stopPropagation()}>
             <button 
               onClick={() => setSelectedMeal(null)}
-              style={{position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', zIndex: 2}}
+              style={{position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.3)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', zIndex: 10}}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
+            {selectedMeal.image && (
+              <div style={{width: '100%', height: '200px', overflow: 'hidden', borderRadius: '24px 24px 0 0', flexShrink: 0}}>
+                <img src={selectedMeal.image} alt={selectedMeal.foodName} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+              </div>
+            )}
             <NutritionCard 
               imageUrl={selectedMeal.image}
               data={{

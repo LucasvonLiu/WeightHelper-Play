@@ -39,11 +39,6 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
     });
   };
 
-  useEffect(() => {
-    if (readOnly && imageUrl) {
-      generatePoster(true);
-    }
-  }, [readOnly, imageUrl, editableData]);
 
   const generatePoster = (displayOnly = false) => {
     if (!imageUrl) return;
@@ -181,6 +176,14 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
     
     img.src = imageUrl;
   };
+
+  // readOnly 模式下自动生成海报展示（useEffect 放在 generatePoster 声明之后避免引用问题）
+  useEffect(() => {
+    if (readOnly && imageUrl) {
+      const timer = setTimeout(() => generatePoster(true), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [readOnly, imageUrl, editableData?.calories]);
 
   const totalMacros = (editableData.protein || 0) + (editableData.carbs || 0) + (editableData.fats || 0);
   
