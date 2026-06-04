@@ -75,10 +75,12 @@ let pgPool;
         )
       `);
       
-      // 尝试添加 tokens 列 (容错处理)
+      // 尝试添加新列 (容错处理)
       try { await pgPool.query(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`); } catch (e) {}
       try { await pgPool.query(`ALTER TABLE users ADD COLUMN goal INTEGER DEFAULT 2000`); } catch (e) {}
       try { await pgPool.query(`ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'Asia/Shanghai'`); } catch (e) {}
+      try { await pgPool.query(`ALTER TABLE meals ADD COLUMN image TEXT`); } catch (e) {}
+      try { await pgPool.query(`ALTER TABLE meals ADD COLUMN details TEXT`); } catch (e) {}
       
       console.log("✅ PostgreSQL 云数据库初始化成功");
     } else {
@@ -114,6 +116,8 @@ let pgPool;
       try { await db.exec(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`); } catch (e) {}
       try { await db.exec(`ALTER TABLE users ADD COLUMN goal INTEGER DEFAULT 2000`); } catch (e) {}
       try { await db.exec(`ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'Asia/Shanghai'`); } catch (e) {}
+      try { await db.exec(`ALTER TABLE meals ADD COLUMN image TEXT`); } catch (e) {}
+      try { await db.exec(`ALTER TABLE meals ADD COLUMN details TEXT`); } catch (e) {}
 
       console.log("✅ SQLite 本地数据库初始化成功");
     }
@@ -397,14 +401,15 @@ app.post('/api/login', async (req, res) => {
 // --- 历史记录接口 ---
 app.post('/api/meals', authenticateToken, async (req, res) => {
   try {
-    const { foodName, calories, protein, carbs, fats } = req.body;
+    const { foodName, calories, protein, carbs, fats, image, details } = req.body;
     const userId = req.user.userId;
     if (!foodName || calories === undefined) {
       return res.status(400).json({ error: "缺少必要字段" });
     }
+    const detailsStr = details ? JSON.stringify(details) : '[]';
     const id = await dbInsertAndGetId(
-      'INSERT INTO meals (userId, foodName, calories, protein, carbs, fats) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, foodName, calories, protein, carbs, fats]
+      'INSERT INTO meals (userId, foodName, calories, protein, carbs, fats, image, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, foodName, calories, protein, carbs, fats, image || '', detailsStr]
     );
     res.json({ id, success: true });
   } catch (error) {
@@ -425,7 +430,7 @@ app.get('/api/meals', authenticateToken, async (req, res) => {
 
     if (isPostgres) {
       meals = await pgPool.query(`
-        SELECT id, userid as "userId", foodname as "foodName", calories, protein, carbs, fats, createdat as "createdAt" FROM meals 
+        SELECT id, userid as "userId", foodname as "foodName", calories, protein, carbs, fats, image, details, createdat as "createdAt" FROM meals 
         WHERE userid = $1 AND createdat >= $2 AND createdat <= $3
         ORDER BY createdat DESC
       `, [userId, startUtc, endUtc]).then(res => res.rows);
@@ -436,6 +441,13 @@ app.get('/api/meals', authenticateToken, async (req, res) => {
         ORDER BY createdAt DESC
       `, [userId, startUtc, endUtc]);
     }
+
+    // 解析 JSON details
+    meals = meals.map(m => {
+      let parsedDetails = [];
+      try { parsedDetails = JSON.parse(m.details); } catch(e) {}
+      return { ...m, details: parsedDetails };
+    });
     
     const totals = meals.reduce((acc, meal) => {
       acc.calories += meal.calories || 0;

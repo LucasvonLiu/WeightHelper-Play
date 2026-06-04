@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ProPaywall from './ProPaywall';
 import moment from 'moment-timezone';
+import NutritionCard from './NutritionCard';
 
 const getPast7Days = (tz) => {
   const dates = [];
@@ -21,6 +22,7 @@ export default function HistoryList({ goal, token, timezone }) {
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [loading, setLoading] = useState(true);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState(null);
   
   const weekDates = getPast7Days(timezone);
 
@@ -48,6 +50,7 @@ export default function HistoryList({ goal, token, timezone }) {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation(); // 阻止冒泡
+    if (!window.confirm('确认删除该记录吗？')) return;
     try {
       setLoading(true);
       const res = await fetch(`/api/meals/${id}`, {
@@ -66,8 +69,18 @@ export default function HistoryList({ goal, token, timezone }) {
     }
   };
 
-  const progress = Math.min((totals.calories / goal) * 100, 100);
+  const C = 226.19; // R=36
+  const calPct = Math.min((totals.calories / goal) * 100, 100);
+  const calOffset = C - (calPct / 100) * C;
 
+  const totalMacros = totals.protein + totals.carbs + totals.fats;
+  const pPct = totalMacros > 0 ? Math.round((totals.protein / totalMacros) * 100) : 0;
+  const cPct = totalMacros > 0 ? Math.round((totals.carbs / totalMacros) * 100) : 0;
+  const fPct = totalMacros > 0 ? 100 - pPct - cPct : 0;
+  
+  const pOffset = C - (pPct / 100) * C;
+  const cOffset = C - (cPct / 100) * C;
+  const fOffset = C - (fPct / 100) * C;
 
   if (loading) {
     return <div style={styles.loadingContainer}>加载中...</div>;
@@ -95,29 +108,37 @@ export default function HistoryList({ goal, token, timezone }) {
         })}
       </div>
       
-      <div style={styles.dashboardCard}>
-        <div style={styles.progressContainer}>
-          <div style={styles.progressBarBg}>
-            <div style={{ ...styles.progressBarFill, width: `${progress}%` }}></div>
-          </div>
-          <div style={styles.caloriesText}>
-            <span style={styles.currentCals}>{totals.calories}</span>
-            <span style={styles.goalCals}>/ {goal} kcal</span>
+      <div style={{ ...styles.dashboardCard, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '24px 12px' }}>
+        {/* 热量余量环形图 */}
+        <div style={{ position: 'relative', width: '110px', height: '110px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <svg width="110" height="110" viewBox="0 0 80 80" style={{ position: 'absolute', top: 0, left: 0 }}>
+            <circle cx="40" cy="40" r="36" fill="transparent" stroke="#f0f0f0" strokeWidth="6" />
+            <circle cx="40" cy="40" r="36" fill="transparent" stroke={totals.calories > goal ? "#ff4d4f" : "var(--accent-green)"} strokeWidth="6" strokeDasharray={C} strokeDashoffset={calOffset} transform="rotate(-90 40 40)" strokeLinecap="round" />
+          </svg>
+          <div style={{ textAlign: 'center', zIndex: 1, marginTop: '2px' }}>
+            <div style={{ fontSize: '20px', fontWeight: '800', color: totals.calories > goal ? '#ff4d4f' : 'var(--text-primary)', lineHeight: 1.2 }}>{totals.calories}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: '500' }}>/ {goal} kcal</div>
           </div>
         </div>
-        
-        <div style={styles.macrosSummary}>
-          <div style={styles.macroItem}>
-            <span style={styles.macroLabel}>蛋白质</span>
-            <span style={styles.macroValue}>{totals.protein}g</span>
-          </div>
-          <div style={styles.macroItem}>
-            <span style={styles.macroLabel}>碳水</span>
-            <span style={styles.macroValue}>{totals.carbs}g</span>
-          </div>
-          <div style={styles.macroItem}>
-            <span style={styles.macroLabel}>脂肪</span>
-            <span style={styles.macroValue}>{totals.fats}g</span>
+
+        {/* 营养素组成环形图 */}
+        <div style={{ position: 'relative', width: '110px', height: '110px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <svg width="110" height="110" viewBox="0 0 80 80" style={{ position: 'absolute', top: 0, left: 0 }}>
+            <circle cx="40" cy="40" r="36" fill="transparent" stroke="#f0f0f0" strokeWidth="6" />
+            <circle cx="40" cy="40" r="36" fill="transparent" stroke="#A3BCA7" strokeWidth="6" strokeDasharray={C} strokeDashoffset={pOffset} transform="rotate(-90 40 40)" strokeLinecap="round" />
+            <circle cx="40" cy="40" r="36" fill="transparent" stroke="#D0D0C8" strokeWidth="6" strokeDasharray={C} strokeDashoffset={cOffset} transform={`rotate(${-90 + (pPct/100)*360} 40 40)`} strokeLinecap="round" />
+            <circle cx="40" cy="40" r="36" fill="transparent" stroke="#E6DFD3" strokeWidth="6" strokeDasharray={C} strokeDashoffset={fOffset} transform={`rotate(${-90 + ((pPct+cPct)/100)*360} 40 40)`} strokeLinecap="round" />
+          </svg>
+          <div style={{ textAlign: 'center', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', fontWeight: '600' }}>
+              <div style={{width: 6, height: 6, backgroundColor: '#A3BCA7', borderRadius: '50%'}}></div>蛋 {pPct}%
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', fontWeight: '600' }}>
+              <div style={{width: 6, height: 6, backgroundColor: '#D0D0C8', borderRadius: '50%'}}></div>碳 {cPct}%
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', fontWeight: '600' }}>
+              <div style={{width: 6, height: 6, backgroundColor: '#E6DFD3', borderRadius: '50%'}}></div>脂 {fPct}%
+            </div>
           </div>
         </div>
       </div>
@@ -129,17 +150,26 @@ export default function HistoryList({ goal, token, timezone }) {
           <p style={styles.emptyState}>今天还没有记录任何饮食哦～</p>
         ) : (
           meals.map(meal => (
-            <div key={meal.id} style={styles.mealItem}>
-              <div style={styles.mealInfo}>
-                <h4 style={styles.mealName}>{meal.foodName}</h4>
-                <span style={styles.mealTime}>
-                  {(() => {
-                    const m = moment.utc(meal.createdAt).tz(timezone);
-                    const offsetHours = m.utcOffset() / 60;
-                    const offsetStr = offsetHours >= 0 ? `+${offsetHours}` : `${offsetHours}`;
-                    return `UTC${offsetStr} ${m.format('HH:mm')}`;
-                  })()}
-                </span>
+            <div key={meal.id} style={{...styles.mealItem, cursor: 'pointer'}} onClick={() => setSelectedMeal(meal)}>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                <div style={{width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f5f5f5', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                  {meal.image ? (
+                    <img src={meal.image} alt={meal.foodName} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                  ) : (
+                    <span style={{fontSize: '20px'}}>🍽️</span>
+                  )}
+                </div>
+                <div style={styles.mealInfo}>
+                  <h4 style={styles.mealName}>{meal.foodName}</h4>
+                  <span style={styles.mealTime}>
+                    {(() => {
+                      const m = moment.utc(meal.createdAt).tz(timezone);
+                      const offsetHours = m.utcOffset() / 60;
+                      const offsetStr = offsetHours >= 0 ? `+${offsetHours}` : `${offsetHours}`;
+                      return `UTC${offsetStr} ${m.format('HH:mm')}`;
+                    })()}
+                  </span>
+                </div>
               </div>
               <div style={styles.mealAction}>
                 <span style={styles.mealCalories}>{meal.calories} kcal</span>
@@ -157,6 +187,35 @@ export default function HistoryList({ goal, token, timezone }) {
       </div>
 
       {showPaywall && <ProPaywall onClose={() => setShowPaywall(false)} />}
+
+      {selectedMeal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, 
+          display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px'
+        }} onClick={() => setSelectedMeal(null)}>
+          <div style={{width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', backgroundColor: 'var(--card-bg)', position: 'relative'}} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedMeal(null)}
+              style={{position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', zIndex: 2}}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <NutritionCard 
+              imageUrl={selectedMeal.image}
+              data={{
+                foodName: selectedMeal.foodName,
+                calories: selectedMeal.calories,
+                protein: selectedMeal.protein,
+                carbs: selectedMeal.carbs,
+                fats: selectedMeal.fats,
+                details: selectedMeal.details || []
+              }} 
+              readOnly={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

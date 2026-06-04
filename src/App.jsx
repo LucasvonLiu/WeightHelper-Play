@@ -171,7 +171,7 @@ function App() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify(mealData),
+        body: JSON.stringify({ ...mealData, image: currentImage }),
       });
       if (response.ok) {
         handleReset();

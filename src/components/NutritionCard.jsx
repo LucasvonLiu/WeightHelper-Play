@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
+export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnly }) {
   const [posterUrl, setPosterUrl] = useState(null);
   const [editableData, setEditableData] = useState(data);
 
@@ -270,52 +270,58 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
           <div key={index} style={styles.detailRow}>
             <span style={styles.detailName}>{item.name}</span>
             <div style={styles.detailInputWrapper}>
-              <input 
-                type="number" 
-                value={item.amount === 0 ? '' : item.amount} 
-                onChange={(e) => handleAmountChange(index, e.target.value)}
-                style={styles.amountInput}
-                min="0"
-              />
+              {readOnly ? (
+                <span style={{...styles.amountInput, display: 'inline-block'}}>{item.amount}</span>
+              ) : (
+                <input 
+                  type="number" 
+                  value={item.amount === 0 ? '' : item.amount} 
+                  onChange={(e) => handleAmountChange(index, e.target.value)}
+                  style={styles.amountInput}
+                  min="0"
+                />
+              )}
               <span style={{fontSize: '14px', color: 'var(--text-secondary)'}}>g</span>
             </div>
           </div>
         ))}
       </div>
 
-      <div style={styles.actions}>
-        <button style={styles.primaryBtn} onClick={() => onSave(editableData)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-            <path d="M8 14h.01"></path>
-            <path d="M12 14h.01"></path>
-            <path d="M16 14h.01"></path>
-            <path d="M8 18h.01"></path>
-            <path d="M12 18h.01"></path>
-            <path d="M16 18h.01"></path>
-          </svg>
-          归档
-        </button>
-        <button style={styles.posterBtn} onClick={generatePoster}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          保存图片
-        </button>
-        <button style={styles.secondaryBtn} onClick={onReset}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
-            <polyline points="1 4 1 10 7 10"></polyline>
-            <polyline points="23 20 23 14 17 14"></polyline>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-          </svg>
-          重新分析
-        </button>
-      </div>
+      {!readOnly && (
+        <div style={styles.actions}>
+          <button style={styles.primaryBtn} onClick={() => onSave(editableData)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+              <path d="M8 14h.01"></path>
+              <path d="M12 14h.01"></path>
+              <path d="M16 14h.01"></path>
+              <path d="M8 18h.01"></path>
+              <path d="M12 18h.01"></path>
+              <path d="M16 18h.01"></path>
+            </svg>
+            归档
+          </button>
+          <button style={styles.posterBtn} onClick={generatePoster}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            保存图片
+          </button>
+          <button style={styles.secondaryBtn} onClick={onReset}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <polyline points="23 20 23 14 17 14"></polyline>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+            </svg>
+            重新分析
+          </button>
+        </div>
+      )}
 
       {posterUrl && (
         <div style={styles.modalOverlay} onClick={() => setPosterUrl(null)}>
