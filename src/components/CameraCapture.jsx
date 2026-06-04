@@ -266,8 +266,7 @@ export default function CameraCapture({ onCapture, modelName, token }) {
             <circle cx="12" cy="13" r="4"></circle>
           </svg>
         </div>
-        <h3 style={styles.uploadTitle}>选择或拍摄食物照片</h3>
-        <p style={styles.uploadHint}>点击此处从相册选择或直接拍照</p>
+
       </div>
 
       <div style={styles.tips}>
@@ -276,7 +275,7 @@ export default function CameraCapture({ onCapture, modelName, token }) {
       
       {modelName && (
         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', opacity: 0.6, marginTop: '8px', marginBottom: '8px' }}>
-          正在使用: {modelName}
+          {modelName}
         </div>
       )}
     </div>
