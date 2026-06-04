@@ -1,16 +1,53 @@
-# React + Vite
+# 📸 WeightHelper
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**欢迎来到 WeightHelper！** 只需拍下食物照片，AI 即可帮您秒算卡路里与三大营养素，轻松管理日常饮食！🥗✨
 
-Currently, two official plugins are available:
+## ✨ 核心功能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **🤖 AI 视觉识别**：拍照上传食物，利用大模型 AI（如 Gemini）秒速估算热量、碳水化合物、蛋白质和脂肪。
+- **🔑 多 Token 优化**：内置智能机制配置并优化多种 API Token，保障 AI 识别服务的顺畅稳定。
+- **🔐 账号与数据记录**：安全的登录机制，帮助不同用户分别记录和管理每天的饮食摄入。
+- **🏆 趣味排行榜**：即将到来的健康打卡与积分排行榜功能，让你在互动中更轻松地坚持目标。
 
-## React Compiler
+## 🚀 如何运行与安装
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 环境要求
+- Node.js (建议 v18+)
+- npm 或 yarn
 
-## Expanding the ESLint configuration
+### 快速启动
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **克隆项目到本地**：
+```bash
+git clone https://github.com/你的用户名/WeightHelper.git
+cd WeightHelper
+```
+
+2. **安装依赖**：
+```bash
+npm install
+```
+
+3. **配置环境变量**：
+复制 `.env.example` 为 `.env` 并填入你自己的 AI API 密钥和相关配置：
+```bash
+cp .env.example .env
+```
+*(安全提示：`.env` 包含敏感信息，已配置在 `.gitignore` 中，请确保不要将其提交到代码库！)*
+
+4. **启动服务**：
+启动本地开发环境：
+```bash
+npm run dev
+```
+
+## 🤝 协作与贡献
+
+开源就是为了碰撞出更多的火花！针对现阶段亟待完善的“新增排行榜”、“完善登录机制”或“Token 逻辑优化”，我们非常欢迎大家参与贡献：
+1. **Fork** 本项目，在你的个人账号下修改代码。
+2. 完成修改后提交 **Pull Request (PR)**，等待审核合并。
+3. 也可以前往 GitHub 的 **Issues** 页面提出 Bug 或认领现有的开发任务卡片！
+
+## 📄 许可证
+
+本项目基于 MIT 许可证开源 - 详情请查看 [LICENSE](LICENSE) 文件。
