@@ -47,8 +47,11 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
     const img = new Image();
     
     img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
+      // 使用 devicePixelRatio 提升清晰度（视网膜屏适配）
+      const dpr = Math.max(window.devicePixelRatio || 2, 2);
+      canvas.width = img.width * dpr;
+      canvas.height = img.height * dpr;
+      ctx.scale(dpr, dpr);
       
       ctx.drawImage(img, 0, 0, img.width, img.height);
       
