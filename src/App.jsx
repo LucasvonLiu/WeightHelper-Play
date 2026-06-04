@@ -199,7 +199,7 @@ function App() {
       <div style={{ padding: '40px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)', lineHeight: 1 }}>WeightHelper</div>
-          <div style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: '600', lineHeight: 1 }}>v2.2.0</div>
+          <div style={{ fontSize: '12px', color: 'var(--accent-green)', fontWeight: '600', lineHeight: 1 }}>v2.3.1</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexShrink: 1, maxWidth: '55%' }}>
           <span style={{ fontSize: '14px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>

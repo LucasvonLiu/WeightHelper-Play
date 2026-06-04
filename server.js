@@ -464,6 +464,74 @@ app.get('/api/meals', authenticateToken, async (req, res) => {
   }
 });
 
+// --- 获取某月有记录的日期列表（用于日历红点）---
+app.get('/api/meals/dates', authenticateToken, async (req, res) => {
+  try {
+    const tz = req.query.tz || 'Asia/Shanghai';
+    const month = req.query.month || moment().tz(tz).format('YYYY-MM'); // e.g. "2025-06"
+    const userId = req.user.userId;
+
+    const startUtc = moment.tz(`${month}-01`, tz).startOf('month').utc().format('YYYY-MM-DD HH:mm:ss');
+    const endUtc   = moment.tz(`${month}-01`, tz).endOf('month').utc().format('YYYY-MM-DD HH:mm:ss');
+
+    let rows;
+    if (isPostgres) {
+      rows = await pgPool.query(
+        `SELECT createdat as "createdAt" FROM meals WHERE userid = $1 AND createdat >= $2 AND createdat <= $3`,
+        [userId, startUtc, endUtc]
+      ).then(r => r.rows);
+    } else {
+      rows = await db.all(
+        `SELECT createdAt FROM meals WHERE userId = ? AND createdAt >= ? AND createdAt <= ?`,
+        [userId, startUtc, endUtc]
+      );
+    }
+
+    // 转换为用户时区的日期字符串集合（去重）
+    const dates = [...new Set(rows.map(r => moment.utc(r.createdAt).tz(tz).format('YYYY-MM-DD')))];
+    res.json({ dates });
+  } catch (error) {
+    console.error("获取日期列表失败:", error);
+    res.status(500).json({ error: "获取日期列表失败" });
+  }
+});
+
+// --- 导出全部记录为 CSV ---
+app.get('/api/meals/export/csv', authenticateToken, async (req, res) => {
+  try {
+    const tz = req.query.tz || 'Asia/Shanghai';
+    const userId = req.user.userId;
+
+    let rows;
+    if (isPostgres) {
+      rows = await pgPool.query(
+        `SELECT foodname as "foodName", calories, protein, carbs, fats, createdat as "createdAt" FROM meals WHERE userid = $1 ORDER BY createdat DESC`,
+        [userId]
+      ).then(r => r.rows);
+    } else {
+      rows = await db.all(
+        `SELECT foodName, calories, protein, carbs, fats, createdAt FROM meals WHERE userId = ? ORDER BY createdAt DESC`,
+        [userId]
+      );
+    }
+
+    const header = '日期,食物,热量(kcal),蛋白质(g),碳水(g),脂肪(g)';
+    const lines = rows.map(r => {
+      const dateStr = moment.utc(r.createdAt).tz(tz).format('YYYY-MM-DD HH:mm');
+      return `${dateStr},${r.foodName},${r.calories},${r.protein},${r.carbs},${r.fats}`;
+    });
+    const csv = [header, ...lines].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="WeightHelper_${moment().tz(tz).format('YYYYMMDD')}.csv"`);
+    res.send('\uFEFF' + csv); // BOM for Excel compatibility
+  } catch (error) {
+    console.error("导出CSV失败:", error);
+    res.status(500).json({ error: "导出失败" });
+  }
+});
+
+
 // --- 删除记录接口 ---
 app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
   try {

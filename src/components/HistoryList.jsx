@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ProPaywall from './ProPaywall';
 import moment from 'moment-timezone';
 import NutritionCard from './NutritionCard';
+import CalendarModal from './CalendarModal';
 
 const getPast7Days = (tz) => {
   const dates = [];
@@ -23,6 +24,7 @@ export default function HistoryList({ goal, token, timezone }) {
   const [loading, setLoading] = useState(true);
   const [showPaywall, setShowPaywall] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
   
   const weekDates = getPast7Days(timezone);
 
@@ -89,24 +91,47 @@ export default function HistoryList({ goal, token, timezone }) {
   return (
     <div className="fade-in" style={styles.container}>
       
-      <div style={styles.calendarStrip}>
-        {weekDates.map(date => {
-          const dateStr = formatDate(date);
-          const isSelected = dateStr === selectedDate;
-          const dayName = ['日', '一', '二', '三', '四', '五', '六'][date.day()];
-          const isToday = dateStr === moment().tz(timezone).format('YYYY-MM-DD');
-          return (
-            <div 
-              key={dateStr} 
-              style={{ ...styles.dateItem, ...(isSelected ? styles.dateItemSelected : {}), color: isSelected ? '#fff' : 'var(--text-secondary)' }}
-              onClick={() => setSelectedDate(dateStr)}
-            >
-              <span style={styles.dayName}>{isToday ? '今' : dayName}</span>
-              <span style={styles.dayNumber}>{date.date()}</span>
-            </div>
-          );
-        })}
+      {/* 日期栏 + 日历图标 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ ...styles.calendarStrip, flex: 1 }}>
+          {weekDates.map(date => {
+            const dateStr = formatDate(date);
+            const isSelected = dateStr === selectedDate;
+            const dayName = ['日', '一', '二', '三', '四', '五', '六'][date.day()];
+            const isToday = dateStr === moment().tz(timezone).format('YYYY-MM-DD');
+            return (
+              <div 
+                key={dateStr} 
+                style={{ ...styles.dateItem, ...(isSelected ? styles.dateItemSelected : {}), color: isSelected ? '#fff' : 'var(--text-secondary)' }}
+                onClick={() => setSelectedDate(dateStr)}
+              >
+                <span style={styles.dayName}>{isToday ? '今' : dayName}</span>
+                <span style={styles.dayNumber}>{date.date()}</span>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => setShowCalendar(true)}
+          style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', opacity: 0.7, display: 'flex', alignItems: 'center' }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </button>
       </div>
+
+      {showCalendar && (
+        <CalendarModal
+          timezone={timezone}
+          token={token}
+          onSelectDate={(date) => setSelectedDate(date)}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
       
       <div style={{ ...styles.dashboardCard, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '24px 12px' }}>
         {/* 热量余量环形图 */}
