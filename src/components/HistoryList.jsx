@@ -112,7 +112,7 @@ export default function HistoryList({ goal, token, timezone }) {
               onClick={() => setSelectedDate(dateStr)}
             >
               <span style={styles.dayName}>{isToday ? '今' : dayName}</span>
-              <span style={styles.dayNumber}>{date.getDate()}</span>
+              <span style={styles.dayNumber}>{date.date()}</span>
             </div>
           );
         })}
