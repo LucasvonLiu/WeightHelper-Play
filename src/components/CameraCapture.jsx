@@ -292,9 +292,8 @@ const styles = {
   },
   uploadArea: {
     width: '100%',
-    flex: 1,
-    minHeight: '220px',
-    maxHeight: '320px',
+    minHeight: '160px',
+    maxHeight: '220px',
     backgroundColor: 'var(--card-bg)',
     borderRadius: 'var(--border-radius)',
     boxShadow: 'var(--shadow-sm)',
@@ -305,6 +304,7 @@ const styles = {
     cursor: 'pointer',
     border: '2px dashed var(--accent-green-light)',
     transition: 'all 0.3s ease',
+    marginBottom: '28px',
   },
   iconWrapper: {
     width: '80px',
@@ -326,7 +326,7 @@ const styles = {
     color: 'var(--text-secondary)',
   },
   tips: {
-    marginTop: 'auto',
+    marginTop: '0',
     marginBottom: '20px',
     fontSize: '14px',
     color: 'var(--text-secondary)',
