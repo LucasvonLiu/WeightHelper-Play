@@ -20,8 +20,6 @@ export default function HistoryList({ goal, token, timezone }) {
   const [meals, setMeals] = useState([]);
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [loading, setLoading] = useState(true);
-  const [aiAdvice, setAiAdvice] = useState('');
-  const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   
   const weekDates = getPast7Days(timezone);
@@ -70,26 +68,6 @@ export default function HistoryList({ goal, token, timezone }) {
 
   const progress = Math.min((totals.calories / goal) * 100, 100);
 
-  const getAIAdvice = async () => {
-    try {
-      setLoadingAdvice(true);
-      const res = await fetch('/api/coach', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ meals, totals, goal })
-      });
-      const data = await res.json();
-      setAiAdvice(data.advice || "AI 暂时无法给出建议。");
-    } catch (error) {
-      console.error(error);
-      alert("获取建议失败");
-    } finally {
-      setLoadingAdvice(false);
-    }
-  };
 
   if (loading) {
     return <div style={styles.loadingContainer}>加载中...</div>;
@@ -145,19 +123,7 @@ export default function HistoryList({ goal, token, timezone }) {
         </div>
       </div>
 
-      <div style={styles.aiCoachCard}>
-        <div style={styles.aiHeader}>
-          <h3 style={styles.listTitle} style={{margin: 0, fontSize: '18px', color: 'var(--text-primary)'}}>🤖 AI 营养师点评</h3>
-          <button style={styles.aiBtn} onClick={getAIAdvice} disabled={loadingAdvice || meals.length === 0}>
-            {loadingAdvice ? '思考中...' : (aiAdvice ? '重新获取' : '获取建议')}
-          </button>
-        </div>
-        {aiAdvice && (
-          <div style={styles.aiContent}>
-            <p style={styles.aiText}>{aiAdvice}</p>
-          </div>
-        )}
-      </div>
+
 
       <div style={styles.mealsList}>
         <h3 style={styles.listTitle}>饮食记录</h3>
@@ -169,7 +135,12 @@ export default function HistoryList({ goal, token, timezone }) {
               <div style={styles.mealInfo}>
                 <h4 style={styles.mealName}>{meal.foodName}</h4>
                 <span style={styles.mealTime}>
-                  {new Date(meal.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                  {(() => {
+                    const m = moment.utc(meal.createdAt).tz(timezone);
+                    const offsetHours = m.utcOffset() / 60;
+                    const offsetStr = offsetHours >= 0 ? `+${offsetHours}` : `${offsetHours}`;
+                    return `UTC${offsetStr} ${m.format('HH:mm')}`;
+                  })()}
                 </span>
               </div>
               <div style={styles.mealAction}>
@@ -360,37 +331,5 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     opacity: 0.7,
-  },
-  aiCoachCard: {
-    backgroundColor: 'var(--accent-green-light)',
-    borderRadius: 'var(--border-radius)',
-    padding: '20px',
-    marginBottom: '24px',
-  },
-  aiHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  aiBtn: {
-    backgroundColor: 'var(--accent-green)',
-    color: '#fff',
-    border: 'none',
-    padding: '8px 16px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  aiContent: {
-    marginTop: '16px',
-    padding: '16px',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    borderRadius: '12px',
-  },
-  aiText: {
-    fontSize: '14px',
-    color: 'var(--text-primary)',
-    lineHeight: '1.6',
   }
 };
