@@ -52,20 +52,24 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
       
       ctx.drawImage(img, 0, 0, img.width, img.height);
       
-      const padding = Math.max(img.width * 0.025, 12);
-      const baseFont = Math.max(img.width * 0.025, 12);
-      const macroText = `碳水 ${editableData.carbs}g · 蛋白 ${editableData.protein}g · 脂肪 ${editableData.fats}g`;
+      const padding = Math.max(img.width * 0.018, 8);
+      const baseFont = Math.max(img.width * 0.018, 8);
       
-      ctx.font = `900 ${baseFont * 1.3}px sans-serif`;
+      // 各营养素分别用不同颜色，先算宽度
+      const carbText = `碳水 ${editableData.carbs}g`;
+      const proteinText = `· 蛋白 ${editableData.protein}g`;
+      const fatText = `· 脂肪 ${editableData.fats}g`;
+      
+      ctx.font = `700 ${baseFont * 1.1}px sans-serif`;
       const nameWidth = ctx.measureText(editableData.foodName).width;
-      ctx.font = `900 ${baseFont * 1.8}px sans-serif`;
+      ctx.font = `800 ${baseFont * 1.6}px sans-serif`;
       const calWidth = ctx.measureText(`${editableData.calories} kcal`).width;
-      ctx.font = `600 ${baseFont * 0.85}px sans-serif`;
-      const macroWidth = ctx.measureText(macroText).width;
+      ctx.font = `500 ${baseFont * 0.75}px sans-serif`;
+      const macroWidth = ctx.measureText(carbText + proteinText + fatText).width;
       
       const contentWidth = Math.max(nameWidth, calWidth, macroWidth);
       const boxWidth = contentWidth + padding * 2;
-      const boxHeight = padding * 2 + baseFont * 3.8; 
+      const boxHeight = padding * 2 + baseFont * 3.6;
       
       const boxX = img.width - boxWidth - padding;
       const boxY = img.height - boxHeight - padding;
@@ -84,9 +88,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
         }
         const brightness = (0.299 * (r/count) + 0.587 * (g/count) + 0.114 * (b/count));
         isLightBg = brightness > 120; 
-      } catch(e) {
-        console.warn("背景颜色采样失败", e);
-      }
+      } catch(e) {}
 
       const cornerRadius = Math.floor(Math.min(boxWidth, boxHeight) * 0.1);
       ctx.save();
@@ -94,79 +96,85 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
       ctx.roundRect(boxX, boxY, boxWidth, boxHeight, [cornerRadius]);
       ctx.clip();
 
-      ctx.filter = 'blur(25px) saturate(140%)';
+      ctx.filter = 'blur(30px) saturate(160%)';
       ctx.drawImage(img, 0, 0, img.width, img.height);
       ctx.filter = 'none';
 
       const gradient = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
       if (isLightBg) {
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.65)');
-        gradient.addColorStop(1, 'rgba(240, 240, 240, 0.25)');
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.72)');
+        gradient.addColorStop(1, 'rgba(245, 245, 245, 0.30)');
       } else {
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.65)');
-        gradient.addColorStop(1, 'rgba(40, 40, 40, 0.35)');
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.70)');
+        gradient.addColorStop(1, 'rgba(30, 30, 30, 0.38)');
       }
       ctx.fillStyle = gradient;
       ctx.fill();
-
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = isLightBg ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = isLightBg ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.18)';
       ctx.stroke();
       ctx.restore();
       
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
       
       const textX = boxX + padding;
       let textY = boxY + padding;
       
-      ctx.fillStyle = isLightBg ? '#111111' : '#ffffff';
-      ctx.font = `900 ${baseFont * 1.3}px sans-serif`;
-      ctx.shadowColor = isLightBg ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetY = 1;
+      // 食物名称
+      ctx.fillStyle = isLightBg ? '#222222' : '#f0f0f0';
+      ctx.font = `700 ${baseFont * 1.1}px sans-serif`;
       ctx.fillText(editableData.foodName, textX, textY);
       
-      textY += baseFont * 1.6;
-      ctx.font = `900 ${baseFont * 1.8}px sans-serif`;
-      ctx.fillStyle = isLightBg ? '#1b4010' : '#8deb75';
-      ctx.shadowBlur = 2;
+      // 卡路里：暗红色
+      textY += baseFont * 1.45;
+      ctx.font = `800 ${baseFont * 1.6}px sans-serif`;
+      ctx.fillStyle = isLightBg ? '#8B1A1A' : '#E87070';
       ctx.fillText(`${editableData.calories} kcal`, textX, textY);
       
-      textY += baseFont * 2.1;
-      ctx.font = `600 ${baseFont * 0.85}px sans-serif`;
-      ctx.fillStyle = isLightBg ? '#444444' : '#dddddd';
-      ctx.shadowColor = 'transparent';
-      ctx.fillText(macroText, textX, textY);
+      // 各营养素分别用对应颜色
+      textY += baseFont * 1.9;
+      ctx.font = `500 ${baseFont * 0.75}px sans-serif`;
+      
+      // 碳水：沙鹿色 #C4A882
+      ctx.fillStyle = isLightBg ? '#8a6d3b' : '#D0C0A8';
+      const cw = ctx.measureText(carbText).width;
+      ctx.fillText(carbText, textX, textY);
+      
+      // 蛋白: 绿色 #7aad84
+      ctx.fillStyle = isLightBg ? '#3a7a4a' : '#A3BCA7';
+      const pw = ctx.measureText(proteinText).width;
+      ctx.fillText(proteinText, textX + cw + 2, textY);
+      
+      // 脂肪: 暖色 #c4a87a
+      ctx.fillStyle = isLightBg ? '#7a5c2a' : '#E6D8C0';
+      ctx.fillText(fatText, textX + cw + pw + 4, textY);
       
       if (displayOnly) {
-        setPosterUrl(canvas.toDataURL('image/jpeg', 0.9));
+        setPosterUrl(canvas.toDataURL('image/png'));
         return;
       }
 
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
       if (isMobile) {
         canvas.toBlob(async (blob) => {
-          const file = new File([blob], 'WeightHelper_Poster.jpg', { type: 'image/jpeg' });
+          const file = new File([blob], 'WeightHelper_Poster.png', { type: 'image/png' });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
-              await navigator.share({
-                files: [file],
-                title: '我的饮食打卡',
-              });
+              await navigator.share({ files: [file], title: '我的饮食打卡' });
             } catch (err) {
-              console.error(err);
-              setPosterUrl(canvas.toDataURL('image/jpeg', 0.9));
+              setPosterUrl(canvas.toDataURL('image/png'));
             }
           } else {
-            setPosterUrl(canvas.toDataURL('image/jpeg', 0.9));
+            setPosterUrl(canvas.toDataURL('image/png'));
           }
-        }, 'image/jpeg', 0.9);
+        }, 'image/png');
       } else {
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const dataUrl = canvas.toDataURL('image/png');
         const link = document.createElement('a');
-        link.download = `WeightHelper_Poster_${new Date().getTime()}.jpg`;
+        link.download = `WeightHelper_${new Date().getTime()}.png`;
         link.href = dataUrl;
         document.body.appendChild(link);
         link.click();
@@ -338,10 +346,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
       )}
 
       {readOnly && posterUrl && (
-        <div style={{ marginTop: '24px', paddingBottom: '24px' }}>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'center' }}>
-            💡 长按下方图片即可保存到相册
-          </p>
+        <div style={{ marginTop: '16px', paddingBottom: '24px' }}>
           <img src={posterUrl} alt="打卡海报" style={{ width: '100%', borderRadius: '16px', display: 'block', boxShadow: 'var(--shadow-md)' }} />
         </div>
       )}
