@@ -61,26 +61,23 @@ id, username, password, createdAt, totalTokensUsed, goal, timezone
 | 历史页白屏 | 用了 moment 对象但调了原生 Date 的 `.getDate()` | 改为 moment 的 `.date()` |
 | 设置跨设备不同步 | goal/timezone 存在 localStorage | 迁移到云端，新增 GET/PUT /api/user/preferences |
 | 偏好接口读写无效 | SQL 里手动拼 `$1/$2` 后又交给适配器 | 改为统一 `?` 占位符 |
-| 重启后数据丢失 | Render 免费实例文件系统临时，SQLite 随重启消失 | 双引擎架构已就绪，等用户配置 DATABASE_URL |
+| 重启后数据丢失 | Render 免费实例文件系统临时，SQLite 随重启消失 | 双引擎架构已就绪，已成功连接 PostgreSQL |
+| API 配额耗尽报错 | Gemini 2.5 Flash 免费配额用完导致 429 或模型不存在(404)报错 | 实现 `generateWithFallback` 模型自动降级，按序调用 `gemini-3.1-flash-lite`, `gemini-3.5-flash`, `gemini-3.0-flash`, `gemini-2.5-flash`, `gemini-2.5-flash-lite` |
+| 饮食记录缺少菜名且时间显示异常 | PostgreSQL 自动将无引号列名转为小写 (`foodname`, `createdat`)，前端无法获取导致出错，moment 错误解析产生当前时间 | 在 `server.js` `GET /api/meals` 查询中添加别名映射 `foodname as "foodName"`，恢复驼峰命名 |
 
 ---
 
-## 四、🔴 当前最紧迫：配置云端数据库（用户亲自操作）
+## 四、最近完成的核心优化（2026-06-04）
 
-代码已完全准备好，只差用户完成以下两步：
-
-**第一步：在 Neon.tech 获取免费 PostgreSQL**
-1. 打开 https://neon.tech，用 GitHub 登录
-2. 新建项目（名字随意，如 `weight-helper-db`）
-3. 复制仪表盘上的 Connection String（`postgresql://...` 格式）
-
-**第二步：在 Render 后台添加环境变量**
-1. 打开 https://dashboard.render.com，进入 WeightHelper 服务
-2. 点击左侧 **Environment Variables**
-3. 添加：Key = `DATABASE_URL`，Value = 上面的连接字符串
-4. 保存，等 Render 自动重启
-
-完成后日志会打印 `☁️ 检测到 DATABASE_URL，正在连接 PostgreSQL 云数据库...`
+1. **数据库迁移确认**：已成功在 Render 环境上打通 PostgreSQL 云端数据库，彻底解决应用重启数据丢失问题。
+2. **AI 模型灾备机制**：针对免费 API 配额容易耗尽的问题，实现了在后端遇到 429 (配额用尽) 或 404 (模型未找到) 时的自动降级重试逻辑（优先高版本 Lite 模型，其次 Flash 模型）。
+3. **UI 极简风改造**：
+   - 去掉了全局悬浮的 AI 模型/Token 徽章，只在“记录”页面下方低调显示当前正在调用的模型。
+   - 移除了历史页的“AI 营养师点评”功能和冗余标题，专注饮食记录本身。
+   - 饮食记录条目的时间显示替换为世界时钟偏移格式（例如 `UTC+8 09:00`），方便跨时区家人交流。
+   - 调整了全站顶部留白（Padding），让整体空间更加松弛。
+   - 网站图标替换为绿叶子 `icon.png`，不再使用框架默认图标。
+4. **新人引导**：在登录/注册前增加了一个弹出式卡片，一句话向新用户介绍产品功能（拍照秒算卡路里）。
 
 ---
 
@@ -103,7 +100,6 @@ id, username, password, createdAt, totalTokensUsed, goal, timezone
 | GET | `/api/user/status` | 获取当前用户 Token 消耗量 |
 | GET | `/api/user/preferences` | 获取 goal 和 timezone |
 | PUT | `/api/user/preferences` | 保存 goal 和 timezone |
-| POST | `/api/coach` | AI 营养师今日点评 |
 | POST | `/api/register` | 注册 |
 | POST | `/api/login` | 登录 |
 
@@ -125,9 +121,9 @@ App.jsx                    # 主入口，管理 token/goal/timezone 状态
 
 ---
 
-## 八、已知局限与潜在改进点
+## 八、已知局限与接下来的计划
 
-1. **Render 冷启动**：免费实例 15 分钟无访问后休眠，重新访问等约 30 秒。可用 UptimeRobot 定时 Ping 保活。
-2. **ProPaywall 未实现**：AI 营养师目前对所有用户开放。
-3. **无密码重置**：忘记密码无法找回。
-4. **食物图片不持久化**：每次识别的图片仅临时存在前端内存。
+1. **Render 休眠与冷启动问题**：由于使用的 Render 免费实例，在 15 分钟无请求后会休眠。休眠后的首次访问需要等待约 30-50 秒。**下一步计划**：配置 UptimeRobot 定时 Ping 服务以保持实例常驻。
+2. **长效图片存储**：目前由于后端没有集成 OSS（对象存储），前端识别上传的图片只是转换为 base64 后发给 AI，并没有永久存储在服务器上，用户也无法回顾曾经拍过的照片。**下一步计划**：接入云存储（如 AWS S3, Supabase Storage 等）持久化食物照片。
+3. **付费与权限体系**：目前的 `ProPaywall` 仅为前端组件占位，未来可考虑实现真正的付费墙及会员专属功能（如营养建议报告等）。
+4. **找回密码功能**：目前只有基础的注册/登录，缺少找回或重置密码的邮件系统流程。
