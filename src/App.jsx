@@ -17,7 +17,7 @@ function App() {
   
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username'));
-  const [tokenInfo, setTokenInfo] = useState({ model: 'Gemini 2.5 Flash', used: 0 });
+  const [tokenInfo, setTokenInfo] = useState({ model: 'gemini-3.1-flash-lite' });
 
   const fetchTokenStatus = async () => {
     if (!token) return;
@@ -27,7 +27,7 @@ function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        setTokenInfo({ model: data.model, used: data.totalTokensUsed });
+        setTokenInfo({ model: data.model });
       }
     } catch (e) {}
   };
@@ -191,13 +191,11 @@ function App() {
         </div>
       </div>
 
-      {/* 实时 Token 消耗小徽章 */}
+      {/* 当前 AI 模型徽章 */}
       <div style={{ padding: '0 24px', marginBottom: '16px', display: 'flex', justifyContent: 'center' }} className="fade-in">
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', backgroundColor: 'var(--card-bg)', borderRadius: '24px', fontSize: '12px', color: 'var(--text-secondary)', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}>
           <span style={{ fontSize: '14px' }}>🧠</span> 
-          <span><strong style={{color: 'var(--text-primary)'}}>{tokenInfo.model}</strong></span>
-          <span style={{ color: '#e0e0e0' }}>|</span>
-          <span>总消耗: <strong style={{ color: 'var(--accent-green)' }}>{tokenInfo.used}</strong> Tokens</span>
+          <span>当前 AI 模型：<strong style={{color: 'var(--accent-green)'}}>{tokenInfo.model}</strong></span>
         </div>
       </div>
 

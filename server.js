@@ -168,6 +168,42 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const FALLBACK_MODELS = [
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.0-flash",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite"
+];
+let currentModelIndex = 0;
+
+async function generateWithFallback(config) {
+  let attemptCount = 0;
+  while (attemptCount < FALLBACK_MODELS.length) {
+    const modelName = FALLBACK_MODELS[currentModelIndex];
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(config);
+      return { result, modelName };
+    } catch (error) {
+      const errorStr = String(error).toLowerCase() + String(error.message || '').toLowerCase();
+      // 判断是否是配额不足(429)或者模型不存在(404)
+      if (
+        error?.status === 429 || error?.status === 404 ||
+        errorStr.includes('429') || errorStr.includes('quota') ||
+        errorStr.includes('404') || errorStr.includes('not found')
+      ) {
+        console.warn(`⚠️ 模型 ${modelName} 失败 (429/404). 自动降级重试...`);
+        currentModelIndex = (currentModelIndex + 1) % FALLBACK_MODELS.length;
+        attemptCount++;
+      } else {
+        throw error; // 其他未知错误，直接抛出
+      }
+    }
+  }
+  throw new Error("所有备选 AI 模型均已耗尽配额或不可用。");
+}
+
 app.post('/api/analyze', authenticateToken, async (req, res) => {
   try {
     const { image } = req.body;
@@ -182,9 +218,6 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
     }
     const mimeType = match[1];
     const base64Data = match[2];
-
-    // 获取 2.5-flash 模型，性能更强且支持当前 API
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
       你是一个专业的健康营养师和中华美食专家。请仔细分析用户上传的这张饮食照片：
@@ -208,7 +241,7 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
       【重要指令】：请务必保持客观、一致和确定性！对于同样的食物和分量，请基于标准的食物热量数据库给出精确且固定的估算值，不要随意波动。
     `;
 
-    const result = await model.generateContent({
+    const { result, modelName } = await generateWithFallback({
       contents: [
         {
           role: 'user',
@@ -240,7 +273,7 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
     res.json(nutritionData);
   } catch (error) {
     console.error("AI 分析失败:", error);
-    res.status(500).json({ error: "AI 分析失败，请检查 API Key 或图片格式。" });
+    res.status(500).json({ error: "AI 分析失败，可能是配额已耗尽或图片有误。" });
   }
 });
 
@@ -361,7 +394,7 @@ app.get('/api/user/status', authenticateToken, async (req, res) => {
   try {
     const result = await dbGet('SELECT totalTokensUsed FROM users WHERE id = ?', [req.user.userId]);
     res.json({ 
-      model: 'gemini-2.5-flash', 
+      model: FALLBACK_MODELS[currentModelIndex], 
       totalTokensUsed: result?.totalTokensUsed || 0 
     });
   } catch (error) {
@@ -403,7 +436,6 @@ app.post('/api/coach', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "缺少必要数据" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `
       你是一个专业、严谨且语气友好的私人 AI 营养师。
       这是用户（${username}）今天的饮食数据：
@@ -419,7 +451,7 @@ app.post('/api/coach', authenticateToken, async (req, res) => {
       请直接返回建议文本，不要包含任何格式化标签（如 Markdown），语气要像真人在发微信。
     `;
 
-    const result = await model.generateContent({
+    const { result, modelName } = await generateWithFallback({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7, // 点评需要多一点创造力和情感
