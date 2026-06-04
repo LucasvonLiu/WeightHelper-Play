@@ -376,9 +376,10 @@ app.get('/api/user/status', authenticateToken, async (req, res) => {
 // --- 个人偏好设置接口 ---
 app.get('/api/user/preferences', authenticateToken, async (req, res) => {
   try {
-    const result = await dbGet('SELECT goal, timezone FROM users WHERE id = ' + (isPostgres ? '$1' : '?'), [req.user.userId]);
+    const result = await dbGet('SELECT goal, timezone FROM users WHERE id = ?', [req.user.userId]);
     res.json({ goal: result?.goal || 2000, timezone: result?.timezone || 'Asia/Shanghai' });
   } catch (error) {
+    console.error('获取设置失败:', error);
     res.status(500).json({ error: "获取设置失败" });
   }
 });
@@ -387,11 +388,12 @@ app.put('/api/user/preferences', authenticateToken, async (req, res) => {
   try {
     const { goal, timezone } = req.body;
     await dbRun(
-      'UPDATE users SET goal = ' + (isPostgres ? '$1' : '?') + ', timezone = ' + (isPostgres ? '$2' : '?') + ' WHERE id = ' + (isPostgres ? '$3' : '?'),
+      'UPDATE users SET goal = ?, timezone = ? WHERE id = ?',
       [goal, timezone, req.user.userId]
     );
     res.json({ success: true });
   } catch (error) {
+    console.error('保存设置失败:', error);
     res.status(500).json({ error: "保存设置失败" });
   }
 });
