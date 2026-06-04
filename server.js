@@ -220,25 +220,17 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
     const base64Data = match[2];
 
     const prompt = `
-      你是一个专业的健康营养师和中华美食专家。请仔细分析用户上传的这张饮食照片：
-      1. 识别食物并起一个好听的中文名字（例如：经典牛肉汉堡薯条套餐）。
-      2. 【核心步骤】：首先，详细拆解这盘食物里的主要食材配料，并估算它们的重量（克）。
-      3. 【计算步骤】：根据你在第 2 步中列出的配料及重量，严格累加计算出总热量（kcal）和三大营养素（克）。
-      
-      请严格按照以下 JSON 格式返回，不要包含任何 \`\`\`json 标记，确保是一个合法的 JSON 字符串。
-      （注意 JSON 键的顺序：请务必先输出 details，再输出 calories 等总计字段。这非常重要，能帮你先思考再得出结论）：
+      请分析图片食物并严格按以下JSON格式返回。为了加快响应速度，details中name务必极度简短（如"牛肉"而非"煎熟的牛肉饼"），不需要任何废话和多余的修饰。必须先输出details以作思考，再输出卡路里等总计字段。
       {
-        "foodName": "食物名称",
+        "foodName": "食物简短名称",
         "details": [
-          { "name": "配料或食材名称1", "amount": "估算克数，如100g" },
-          { "name": "配料或食材名称2", "amount": "估算克数，如50g" }
+          { "name": "核心配料", "amount": "100g" }
         ],
         "calories": 450,
         "protein": 28,
         "carbs": 35,
         "fats": 19
       }
-      【重要指令】：请务必保持客观、一致和确定性！对于同样的食物和分量，请基于标准的食物热量数据库给出精确且固定的估算值，不要随意波动。
     `;
 
     const { result, modelName } = await generateWithFallback({
@@ -258,7 +250,7 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
       ],
       generationConfig: {
         responseMimeType: "application/json",
-        temperature: 0.1,
+        temperature: 0,
       }
     });
 

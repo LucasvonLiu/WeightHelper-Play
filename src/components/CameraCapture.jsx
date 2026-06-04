@@ -21,9 +21,37 @@ export default function CameraCapture({ onCapture, modelName }) {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
-      // 读取成功后，将图片的 Base64 数据传回给父组件
-      onCapture(reader.result);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_SIZE = 1024;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round(height * (MAX_SIZE / width));
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round(width * (MAX_SIZE / height));
+            height = MAX_SIZE;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // 导出压缩后的 base64，大幅提升网络传输速度
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        onCapture(compressedBase64);
+      };
+      img.src = event.target.result;
     };
     reader.onerror = () => {
       alert('图片读取失败，请重试。');
