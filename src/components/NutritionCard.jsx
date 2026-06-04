@@ -1,9 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
   const [posterUrl, setPosterUrl] = useState(null);
+  const [editableData, setEditableData] = useState(data);
 
-  if (!data) return null;
+  useEffect(() => {
+    setEditableData(data);
+  }, [data]);
+
+  if (!editableData) return null;
+
+  const handleAmountChange = (index, newAmountStr) => {
+    const newAmount = parseInt(newAmountStr) || 0;
+    const newDetails = [...editableData.details];
+    newDetails[index] = { ...newDetails[index], amount: newAmount };
+
+    // Recalculate totals
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFats = 0;
+
+    newDetails.forEach(item => {
+      const macros = item.macrosPer100g || { calories: 0, protein: 0, carbs: 0, fats: 0 };
+      const ratio = item.amount / 100;
+      totalCalories += macros.calories * ratio;
+      totalProtein += macros.protein * ratio;
+      totalCarbs += macros.carbs * ratio;
+      totalFats += macros.fats * ratio;
+    });
+
+    setEditableData({
+      ...editableData,
+      details: newDetails,
+      calories: Math.round(totalCalories),
+      protein: Math.round(totalProtein),
+      carbs: Math.round(totalCarbs),
+      fats: Math.round(totalFats)
+    });
+  };
 
   const generatePoster = () => {
     if (!imageUrl) return;
@@ -21,13 +56,13 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
       // 2. 动态计算版面尺寸 (根据文字长度，极简紧凑)
       const padding = Math.max(img.width * 0.025, 12);
       const baseFont = Math.max(img.width * 0.025, 12);
-      const macroText = `碳水 ${data.carbs}g · 蛋白 ${data.protein}g · 脂肪 ${data.fats}g`;
+      const macroText = `碳水 ${editableData.carbs}g · 蛋白 ${editableData.protein}g · 脂肪 ${editableData.fats}g`;
       
       // 测量文本宽度
       ctx.font = `900 ${baseFont * 1.3}px sans-serif`;
-      const nameWidth = ctx.measureText(data.foodName).width;
+      const nameWidth = ctx.measureText(editableData.foodName).width;
       ctx.font = `900 ${baseFont * 1.8}px sans-serif`;
-      const calWidth = ctx.measureText(`${data.calories} kcal`).width;
+      const calWidth = ctx.measureText(`${editableData.calories} kcal`).width;
       ctx.font = `600 ${baseFont * 0.85}px sans-serif`;
       const macroWidth = ctx.measureText(macroText).width;
       
@@ -102,14 +137,14 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
       ctx.shadowColor = isLightBg ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
       ctx.shadowBlur = 4;
       ctx.shadowOffsetY = 1;
-      ctx.fillText(data.foodName, textX, textY);
+      ctx.fillText(editableData.foodName, textX, textY);
       
       // 总热量
       textY += baseFont * 1.6;
       ctx.font = `900 ${baseFont * 1.8}px sans-serif`;
       ctx.fillStyle = isLightBg ? '#1b4010' : '#8deb75';
       ctx.shadowBlur = 2;
-      ctx.fillText(`${data.calories} kcal`, textX, textY);
+      ctx.fillText(`${editableData.calories} kcal`, textX, textY);
       
       // 三大宏量营养素
       textY += baseFont * 2.1;
@@ -156,41 +191,50 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
     img.src = imageUrl;
   };
 
-  const totalMacros = data.protein + data.carbs + data.fats;
+  const totalMacros = (editableData.protein || 0) + (editableData.carbs || 0) + (editableData.fats || 0);
   
-  const getPercentage = (value) => Math.round((value / totalMacros) * 100) + '%';
+  const getPercentage = (value) => totalMacros > 0 ? Math.round((value / totalMacros) * 100) + '%' : '0%';
 
   return (
     <div className="nutrition-card fade-in" style={styles.container}>
       <div style={styles.header}>
         <h2 style={styles.title}>扫描分析结果</h2>
-        <h3 style={styles.foodName}>{data.foodName}</h3>
+        <h3 style={styles.foodName}>{editableData.foodName}</h3>
       </div>
 
       <div style={styles.mainStats}>
         <div style={styles.calorieCircle}>
-          <span style={styles.calorieValue}>{data.calories}</span>
+          <span style={styles.calorieValue}>{editableData.calories}</span>
           <span style={styles.calorieUnit}>kcal</span>
         </div>
         <div style={styles.macrosList}>
-          <MacroItem label="蛋白质" value={`${data.protein}g`} percentage={getPercentage(data.protein)} color="#A3BCA7" />
-          <MacroItem label="碳水" value={`${data.carbs}g`} percentage={getPercentage(data.carbs)} color="#D0D0C8" />
-          <MacroItem label="脂肪" value={`${data.fats}g`} percentage={getPercentage(data.fats)} color="#E6DFD3" />
+          <MacroItem label="蛋白质" value={`${editableData.protein}g`} percentage={getPercentage(editableData.protein)} color="#A3BCA7" />
+          <MacroItem label="碳水" value={`${editableData.carbs}g`} percentage={getPercentage(editableData.carbs)} color="#D0D0C8" />
+          <MacroItem label="脂肪" value={`${editableData.fats}g`} percentage={getPercentage(editableData.fats)} color="#E6DFD3" />
         </div>
       </div>
 
       <div style={styles.detailsList}>
-        <h4 style={styles.detailsTitle}>食物成分估算</h4>
-        {data.details.map((item, index) => (
+        <h4 style={styles.detailsTitle}>食物成分与估算重量 (可手动微调)</h4>
+        {editableData.details.map((item, index) => (
           <div key={index} style={styles.detailRow}>
             <span style={styles.detailName}>{item.name}</span>
-            <span style={styles.detailAmount}>{item.amount}</span>
+            <div style={styles.detailInputWrapper}>
+              <input 
+                type="number" 
+                value={item.amount === 0 ? '' : item.amount} 
+                onChange={(e) => handleAmountChange(index, e.target.value)}
+                style={styles.amountInput}
+                min="0"
+              />
+              <span style={{fontSize: '14px', color: 'var(--text-secondary)'}}>g</span>
+            </div>
           </div>
         ))}
       </div>
 
       <div style={styles.actions}>
-        <button style={styles.primaryBtn} onClick={() => onSave(data)}>记录这一餐</button>
+        <button style={styles.primaryBtn} onClick={() => onSave(editableData)}>记录这一餐</button>
         <button style={styles.posterBtn} onClick={generatePoster}>📸 生成打卡海报</button>
         <button style={styles.secondaryBtn} onClick={onReset}>重新扫描</button>
       </div>
@@ -324,16 +368,32 @@ const styles = {
   detailRow: {
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: '12px 0',
     borderBottom: '1px solid #eee',
   },
   detailName: {
     color: 'var(--text-primary)',
     fontSize: '15px',
+    flex: 1,
   },
-  detailAmount: {
-    color: 'var(--text-secondary)',
-    fontSize: '15px',
+  detailInputWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: '#f5f5f5',
+    padding: '4px 12px',
+    borderRadius: '8px',
+  },
+  amountInput: {
+    width: '50px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: 'var(--accent-green)',
+    textAlign: 'right',
+    outline: 'none',
   },
   actions: {
     display: 'flex',
@@ -349,6 +409,8 @@ const styles = {
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '600',
+    border: 'none',
+    cursor: 'pointer'
   },
   posterBtn: {
     backgroundColor: '#333',
@@ -367,6 +429,8 @@ const styles = {
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '500',
+    border: 'none',
+    cursor: 'pointer'
   },
   modalOverlay: {
     position: 'fixed',

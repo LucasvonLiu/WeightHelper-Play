@@ -10,6 +10,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pg from 'pg';
 import moment from 'moment-timezone';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const nutritionDB = require('./nutritionDB.js');
 
 const { Pool } = pg;
 
@@ -206,7 +210,7 @@ async function generateWithFallback(config) {
 
 app.post('/api/analyze', authenticateToken, async (req, res) => {
   try {
-    const { image } = req.body;
+    const { image, userInput } = req.body;
     if (!image) {
       return res.status(400).json({ error: "图片数据缺失" });
     }
@@ -220,16 +224,25 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
     const base64Data = match[2];
 
     const prompt = `
-      请分析图片食物并严格按以下JSON格式返回。为了加快响应速度，details中name务必极度简短（如"牛肉"而非"煎熟的牛肉饼"），不需要任何废话和多余的修饰。必须先输出details以作思考，再输出卡路里等总计字段。
+      你需要像专业营养师和大厨一样，拆解图中的食物。
+      ${userInput ? `用户提供了以下重要提示，请以此为最高准则（它可能是菜名或重量）：【${userInput}】` : ''}
+      
+      核心指令：
+      1. 识别图中的食材。即使有些调料（如“食用油”、“白糖”、“酱油”）看不见，也要根据菜品的光泽度、烹饪方式（如油炸、红烧、爆炒）合理地预估它们的用量。
+      2. 严格按以下 JSON 格式返回。details 中的 amount 必须是纯数字（代表克数）。你不需要计算最终的总卡路里。
+      3. details 中的 name 尽量使用常见食材名，如"猪肉(肥瘦)", "米饭", "食用油", "鸡蛋", "番茄", "老干妈" 等。
+      4. 为了防止本地数据库没有你说的食材，请同时附带一个你预估的该食材的“每 100g 营养单价”(fallbackMacros)。
+      
+      返回格式：
       {
-        "foodName": "食物简短名称",
+        "foodName": "食物名称",
         "details": [
-          { "name": "核心配料", "amount": "100g" }
-        ],
-        "calories": 450,
-        "protein": 28,
-        "carbs": 35,
-        "fats": 19
+          { 
+            "name": "食材名称", 
+            "amount": 100,
+            "fallbackMacros": { "calories": 100, "protein": 5, "carbs": 10, "fats": 5 }
+          }
+        ]
       }
     `;
 
@@ -250,12 +263,45 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
       ],
       generationConfig: {
         responseMimeType: "application/json",
-        temperature: 0,
+        temperature: 0.1,
       }
     });
 
     const responseText = result.response.text();
-    const nutritionData = JSON.parse(responseText);
+    const aiData = JSON.parse(responseText);
+
+    // 计算总和并绑定每百克数据
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFats = 0;
+
+    const processedDetails = aiData.details.map(item => {
+      // 在本地库查找
+      const dbMacros = nutritionDB[item.name];
+      const macrosPer100g = dbMacros || item.fallbackMacros || { calories: 0, protein: 0, carbs: 0, fats: 0 };
+      
+      const amountRatio = item.amount / 100;
+      totalCalories += macrosPer100g.calories * amountRatio;
+      totalProtein += macrosPer100g.protein * amountRatio;
+      totalCarbs += macrosPer100g.carbs * amountRatio;
+      totalFats += macrosPer100g.fats * amountRatio;
+
+      return {
+        name: item.name,
+        amount: item.amount,
+        macrosPer100g: macrosPer100g
+      };
+    });
+
+    const nutritionData = {
+      foodName: aiData.foodName,
+      details: processedDetails,
+      calories: Math.round(totalCalories),
+      protein: Math.round(totalProtein),
+      carbs: Math.round(totalCarbs),
+      fats: Math.round(totalFats)
+    };
 
     const tokens = result.response.usageMetadata?.totalTokenCount || 0;
     if (tokens > 0) {

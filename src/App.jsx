@@ -99,6 +99,8 @@ function App() {
     }
   };
 
+  const [currentUserInput, setCurrentUserInput] = useState('');
+
   // 当进入分析状态时，触发真实的后端 API 请求
   useEffect(() => {
     if (appState !== 'analyzing' || !currentImage) return;
@@ -113,7 +115,7 @@ function App() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ image: currentImage }),
+          body: JSON.stringify({ image: currentImage, userInput: currentUserInput }),
         });
 
         if (!response.ok) {
@@ -141,15 +143,17 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [appState, currentImage]);
+  }, [appState, currentImage, currentUserInput]);
 
-  const handleCapture = (base64Image) => {
+  const handleCapture = (base64Image, userInput = '') => {
     setCurrentImage(base64Image);
+    setCurrentUserInput(userInput);
     setAppState('analyzing');
   };
 
   const handleReset = () => {
     setCurrentImage(null);
+    setCurrentUserInput('');
     setAnalysisResult(null);
     setAppState('capture');
   };

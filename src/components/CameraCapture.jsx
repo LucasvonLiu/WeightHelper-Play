@@ -1,10 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
 export default function CameraCapture({ onCapture, modelName }) {
   const fileInputRef = useRef(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [userInput, setUserInput] = useState('');
 
   const handleAreaClick = () => {
-    // 触发隐藏的 file input 点击事件
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -14,7 +15,6 @@ export default function CameraCapture({ onCapture, modelName }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // 校验文件类型是否为图片
     if (!file.type.startsWith('image/')) {
       alert('请选择一张图片文件！');
       return;
@@ -47,9 +47,8 @@ export default function CameraCapture({ onCapture, modelName }) {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 导出压缩后的 base64，大幅提升网络传输速度
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-        onCapture(compressedBase64);
+        setPreviewImage(compressedBase64);
       };
       img.src = event.target.result;
     };
@@ -57,7 +56,64 @@ export default function CameraCapture({ onCapture, modelName }) {
       alert('图片读取失败，请重试。');
     };
     reader.readAsDataURL(file);
+    e.target.value = null; // reset input
   };
+
+  const handleRotate = () => {
+    if (!previewImage) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.height;
+      canvas.height = img.width;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((90 * Math.PI) / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      
+      const rotatedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+      setPreviewImage(rotatedBase64);
+    };
+    img.src = previewImage;
+  };
+
+  const handleSubmit = () => {
+    onCapture(previewImage, userInput);
+  };
+
+  const handleCancel = () => {
+    setPreviewImage(null);
+    setUserInput('');
+  };
+
+  if (previewImage) {
+    return (
+      <div className="capture-container fade-in" style={styles.container}>
+        <div style={styles.previewWrapper}>
+          <img src={previewImage} alt="preview" style={styles.previewImage} />
+          <button onClick={handleRotate} style={styles.rotateBtn}>🔄 旋转</button>
+        </div>
+        
+        <div style={{width: '100%', marginBottom: '24px'}}>
+          <label style={{display: 'block', fontSize: '14px', marginBottom: '8px', color: 'var(--text-secondary)'}}>
+            👉（可选）这是什么菜？分量多少？
+          </label>
+          <input 
+            type="text" 
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            placeholder="如：番茄炒蛋 300g 或 一大碗面"
+            style={styles.textInput}
+          />
+        </div>
+
+        <div style={{display: 'flex', gap: '12px', width: '100%'}}>
+          <button onClick={handleCancel} style={styles.secondaryBtn}>重拍</button>
+          <button onClick={handleSubmit} style={styles.primaryBtn}>开始分析</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="capture-container fade-in" style={styles.container}>
@@ -68,7 +124,6 @@ export default function CameraCapture({ onCapture, modelName }) {
         </h1>
       </header>
 
-      {/* 隐藏的真实文件输入框 */}
       <input
         type="file"
         ref={fileInputRef}
@@ -89,7 +144,7 @@ export default function CameraCapture({ onCapture, modelName }) {
       </div>
 
       <div style={styles.tips}>
-        <p>💡 提示：尽量从正上方拍摄，保证光线充足。</p>
+        <p>💡 提示：为了让 AI 估算重量更准，建议在画面边缘放入您的手、硬币或常规餐具作为比例尺哦！</p>
       </div>
       
       {modelName && (
@@ -108,20 +163,6 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     height: 'calc(100vh - 120px)'
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '60px',
-  },
-  title: {
-    fontSize: '28px',
-    fontWeight: '600',
-    color: 'var(--accent-green)',
-    marginBottom: '8px',
-  },
-  subtitle: {
-    color: 'var(--text-secondary)',
-    fontSize: '15px',
   },
   uploadArea: {
     width: '100%',
@@ -166,5 +207,66 @@ const styles = {
     backgroundColor: 'var(--accent-green-light)',
     padding: '12px 20px',
     borderRadius: '20px',
+  },
+  previewWrapper: {
+    width: '100%',
+    position: 'relative',
+    marginBottom: '24px',
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    minHeight: '200px'
+  },
+  previewImage: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain'
+  },
+  rotateBtn: {
+    position: 'absolute',
+    bottom: '16px',
+    right: '16px',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '20px',
+    fontSize: '14px',
+    cursor: 'pointer'
+  },
+  textInput: {
+    width: '100%',
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid #ddd',
+    fontSize: '16px',
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  primaryBtn: {
+    flex: 2,
+    backgroundColor: 'var(--accent-green)',
+    color: '#fff',
+    padding: '16px',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    border: 'none',
+    cursor: 'pointer'
+  },
+  secondaryBtn: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    color: 'var(--text-primary)',
+    padding: '16px',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    border: 'none',
+    cursor: 'pointer'
   }
 };
