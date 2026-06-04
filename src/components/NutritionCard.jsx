@@ -186,6 +186,49 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
   const cOffset = C - (carbsPct / 100) * C;
   const fOffset = C - (fatsPct / 100) * C;
 
+  const donutLabels = [];
+  let prevRightY = null;
+  let prevLeftY = null;
+
+  [
+    { pct: proteinPct, label: "蛋白质", value: editableData.protein, color: "#A3BCA7" },
+    { pct: carbsPct, label: "碳水", value: editableData.carbs, color: "#D0D0C8" },
+    { pct: fatsPct, label: "脂肪", value: editableData.fats, color: "#E6DFD3" }
+  ].reduce((startPct, item) => {
+    if (item.pct > 0) {
+      const midPct = startPct + item.pct / 2;
+      const angle = (-Math.PI / 2) + (midPct / 100) * 2 * Math.PI;
+      const cx = 100, cy = 60, R = 36;
+      
+      const x1 = cx + (R + 4) * Math.cos(angle);
+      const y1 = cy + (R + 4) * Math.sin(angle);
+      
+      let x2 = cx + (R + 16) * Math.cos(angle);
+      let y2 = cy + (R + 16) * Math.sin(angle);
+      
+      const isRight = Math.cos(angle) >= 0;
+      
+      if (isRight) {
+        if (prevRightY !== null && Math.abs(y2 - prevRightY) < 32) {
+          y2 = prevRightY + (y2 >= prevRightY ? 32 : -32);
+        }
+        prevRightY = y2;
+      } else {
+        if (prevLeftY !== null && Math.abs(y2 - prevLeftY) < 32) {
+          y2 = prevLeftY + (y2 >= prevLeftY ? 32 : -32);
+        }
+        prevLeftY = y2;
+      }
+
+      const x3 = isRight ? x2 + 12 : x2 - 12;
+      const textX = isRight ? x3 + 6 : x3 - 6;
+      const textAnchor = isRight ? "start" : "end";
+
+      donutLabels.push({ x1, y1, x2, y2, x3, textX, textY: y2, isRight, ...item });
+    }
+    return startPct + item.pct;
+  }, 0);
+
   return (
     <div className="nutrition-card fade-in" style={styles.container}>
       <div style={styles.header}>
@@ -198,23 +241,27 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave }) {
           <span style={styles.calorieUnit}>kcal</span>
         </div>
         
-        {/* 右侧：宏量营养素列表 + 简约环形图 */}
-        <div style={styles.macrosContainer}>
-          <div style={styles.macrosList}>
-            <MacroItem label="蛋白质" value={`${editableData.protein}g`} percentage={`${proteinPct}%`} color="#A3BCA7" />
-            <MacroItem label="碳水" value={`${editableData.carbs}g`} percentage={`${carbsPct}%`} color="#D0D0C8" />
-            <MacroItem label="脂肪" value={`${editableData.fats}g`} percentage={`${fatsPct}%`} color="#E6DFD3" />
-          </div>
-          
-          {/* 简约环形图 */}
-          <div style={styles.donutWrapper}>
-            <svg width="80" height="80" viewBox="0 0 80 80">
-              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#f0f0f0" strokeWidth="8" />
-              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#A3BCA7" strokeWidth="8" strokeDasharray={C} strokeDashoffset={pOffset} transform="rotate(-90 40 40)" strokeLinecap="round" />
-              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#D0D0C8" strokeWidth="8" strokeDasharray={C} strokeDashoffset={cOffset} transform={`rotate(${-90 + (proteinPct/100)*360} 40 40)`} strokeLinecap="round" />
-              <circle cx="40" cy="40" r="36" fill="transparent" stroke="#E6DFD3" strokeWidth="8" strokeDasharray={C} strokeDashoffset={fOffset} transform={`rotate(${-90 + ((proteinPct+carbsPct)/100)*360} 40 40)`} strokeLinecap="round" />
-            </svg>
-          </div>
+        {/* 右侧：宏量营养素环形图带拉线标注 */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <svg width="100%" height="120" viewBox="-10 0 220 120" style={{ overflow: 'visible' }}>
+            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#f0f0f0" strokeWidth="8" />
+            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#A3BCA7" strokeWidth="8" strokeDasharray={C} strokeDashoffset={pOffset} transform="rotate(-90 100 60)" strokeLinecap="round" />
+            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#D0D0C8" strokeWidth="8" strokeDasharray={C} strokeDashoffset={cOffset} transform={`rotate(${-90 + (proteinPct/100)*360} 100 60)`} strokeLinecap="round" />
+            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#E6DFD3" strokeWidth="8" strokeDasharray={C} strokeDashoffset={fOffset} transform={`rotate(${-90 + ((proteinPct+carbsPct)/100)*360} 100 60)`} strokeLinecap="round" />
+            
+            {donutLabels.map((l, i) => (
+              <g key={i}>
+                <polyline points={`${l.x1},${l.y1} ${l.x2},${l.y2} ${l.x3},${l.y2}`} fill="none" stroke={l.color} strokeWidth="1.5" strokeLinejoin="round"/>
+                <circle cx={l.x1} cy={l.y1} r="3" fill={l.color} stroke="var(--card-bg)" strokeWidth="1.5" />
+                <text x={l.textX} y={l.textY - 4} fill="var(--text-secondary)" fontSize="11" textAnchor={l.textAnchor}>
+                  {l.label} <tspan fill="var(--text-primary)" fontWeight="600">{l.value}g</tspan>
+                </text>
+                <text x={l.textX} y={l.textY + 12} fill="var(--text-secondary)" fontSize="12" fontWeight="500" textAnchor={l.textAnchor}>
+                  {l.pct}%
+                </text>
+              </g>
+            ))}
+          </svg>
         </div>
       </div>
 
