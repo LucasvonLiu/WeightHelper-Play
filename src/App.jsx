@@ -197,7 +197,7 @@ function App() {
     <div className="app-wrapper">
       {/* 顶部简单的状态栏 */}
       <div style={{ padding: '40px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>WeightHelper <span style={{fontSize: '12px', color: 'var(--accent-green)', marginLeft: '4px'}}>v2.1.3</span></div>
+        <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>WeightHelper <span style={{fontSize: '12px', color: 'var(--accent-green)', marginLeft: '4px'}}>v2.2.0</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexShrink: 1, maxWidth: '55%' }}>
           <span style={{ fontSize: '14px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
             {username}
