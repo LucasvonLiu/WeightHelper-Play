@@ -183,7 +183,7 @@ function App() {
   return (
     <div className="app-wrapper">
       {/* 顶部简单的状态栏 */}
-      <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '40px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>WeightHelper</div>
         <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
           {username} 
