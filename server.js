@@ -8,6 +8,9 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import pg from 'pg';
+
+const { Pool } = pg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,54 +37,116 @@ const genAI = new GoogleGenerativeAI(apiKey || 'DUMMY_KEY');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'weighthelper-super-secret-key-2024';
 
-// 初始化 SQLite 数据库
+const isPostgres = !!process.env.DATABASE_URL;
 let db;
+let pgPool;
+
 (async () => {
   try {
-    db = await open({
-      filename: path.join(__dirname, 'database.sqlite'),
-      driver: sqlite3.Database
-    });
-    
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS meals (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        userId INTEGER,
-        foodName TEXT,
-        calories INTEGER,
-        protein INTEGER,
-        carbs INTEGER,
-        fats INTEGER,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // 尝试添加 userId 字段 (如果之前单机版建立过表的话)
-    try {
-      await db.exec(`ALTER TABLE meals ADD COLUMN userId INTEGER`);
-    } catch (e) {
-      // 字段已存在则忽略
-    }
-    
-    // 自动添加 tokens 统计列
-    try {
-      await db.exec(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`);
-    } catch (e) {}
+    if (isPostgres) {
+      console.log("☁️  检测到 DATABASE_URL，正在连接 PostgreSQL 云数据库...");
+      pgPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      });
+      
+      await pgPool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(255) UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          totalTokensUsed INTEGER DEFAULT 0
+        )
+      `);
+      
+      await pgPool.query(`
+        CREATE TABLE IF NOT EXISTS meals (
+          id SERIAL PRIMARY KEY,
+          userId INTEGER,
+          foodName VARCHAR(255),
+          calories INTEGER,
+          protein INTEGER,
+          carbs INTEGER,
+          fats INTEGER,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // 尝试添加 tokens 列 (容错处理)
+      try { await pgPool.query(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`); } catch (e) {}
+      
+      console.log("✅ PostgreSQL 云数据库初始化成功");
+    } else {
+      console.log("💾 未配置 DATABASE_URL，正在连接本地 SQLite 数据库...");
+      db = await open({
+        filename: path.join(__dirname, 'database.sqlite'),
+        driver: sqlite3.Database
+      });
+      
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS meals (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER,
+          foodName TEXT,
+          calories INTEGER,
+          protein INTEGER,
+          carbs INTEGER,
+          fats INTEGER,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      try { await db.exec(`ALTER TABLE meals ADD COLUMN userId INTEGER`); } catch (e) {}
+      try { await db.exec(`ALTER TABLE users ADD COLUMN totalTokensUsed INTEGER DEFAULT 0`); } catch (e) {}
 
-    console.log("✅ 数据库初始化成功");
+      console.log("✅ SQLite 本地数据库初始化成功");
+    }
   } catch (err) {
     console.error("❌ 数据库初始化失败:", err);
   }
 })();
+
+// --- 数据库适配器函数 ---
+async function dbRun(query, params = []) {
+  if (isPostgres) {
+    let i = 1;
+    return pgPool.query(query.replace(/\?/g, () => `$${i++}`), params);
+  } else {
+    return db.run(query, params);
+  }
+}
+
+async function dbGet(query, params = []) {
+  if (isPostgres) {
+    let i = 1;
+    const res = await pgPool.query(query.replace(/\?/g, () => `$${i++}`), params);
+    return res.rows[0];
+  } else {
+    return db.get(query, params);
+  }
+}
+
+async function dbInsertAndGetId(query, params = []) {
+  if (isPostgres) {
+    let i = 1;
+    const pgQuery = query.replace(/\?/g, () => `$${i++}`) + ' RETURNING id';
+    const res = await pgPool.query(pgQuery, params);
+    return res.rows[0].id;
+  } else {
+    const result = await db.run(query, params);
+    return result.lastID;
+  }
+}
 
 app.post('/api/analyze', async (req, res) => {
   try {
@@ -152,7 +217,7 @@ app.post('/api/analyze', async (req, res) => {
         const token = req.headers['authorization'].split(' ')[1];
         jwt.verify(token, JWT_SECRET, async (err, decoded) => {
             if (!err) {
-                await db.run('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, decoded.userId]);
+                await dbRun('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, decoded.userId]);
             }
         });
     }
@@ -184,16 +249,16 @@ app.post('/api/register', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: '用户名和密码不能为空' });
     
-    const existing = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    const existing = await dbGet('SELECT * FROM users WHERE username = ?', [username]);
     if (existing) return res.status(400).json({ error: '用户名已存在' });
     
     const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await db.run(
+    const userId = await dbInsertAndGetId(
       'INSERT INTO users (username, password) VALUES (?, ?)',
       [username, hashedPassword]
     );
     
-    const token = jwt.sign({ userId: result.lastID, username }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ success: true, token, username });
   } catch (error) {
     console.error("注册失败:", error);
@@ -204,7 +269,7 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    const user = await dbGet('SELECT * FROM users WHERE username = ?', [username]);
     if (!user) return res.status(400).json({ error: '用户名或密码错误' });
     
     const isMatch = await bcrypt.compare(password, user.password);
@@ -226,11 +291,11 @@ app.post('/api/meals', authenticateToken, async (req, res) => {
     if (!foodName || calories === undefined) {
       return res.status(400).json({ error: "缺少必要字段" });
     }
-    const result = await db.run(
+    const id = await dbInsertAndGetId(
       'INSERT INTO meals (userId, foodName, calories, protein, carbs, fats) VALUES (?, ?, ?, ?, ?, ?)',
       [userId, foodName, calories, protein, carbs, fats]
     );
-    res.json({ id: result.lastID, success: true });
+    res.json({ id, success: true });
   } catch (error) {
     console.error("保存记录失败:", error);
     res.status(500).json({ error: "保存失败" });
@@ -240,14 +305,24 @@ app.post('/api/meals', authenticateToken, async (req, res) => {
 app.get('/api/meals', authenticateToken, async (req, res) => {
   try {
     const targetDate = req.query.date;
-    const dateCondition = targetDate ? `'${targetDate}'` : `date('now', '+8 hours')`;
     const userId = req.user.userId;
+    let meals;
 
-    const meals = await db.all(`
-      SELECT * FROM meals 
-      WHERE userId = ? AND date(createdAt, '+8 hours') = ${dateCondition}
-      ORDER BY createdAt DESC
-    `, [userId]);
+    if (isPostgres) {
+      const dateCondition = targetDate ? `'${targetDate}'` : `(CURRENT_TIMESTAMP + interval '8 hours')::date`;
+      meals = await pgPool.query(`
+        SELECT * FROM meals 
+        WHERE userId = $1 AND (createdAt + interval '8 hours')::date = ${dateCondition}
+        ORDER BY createdAt DESC
+      `, [userId]).then(res => res.rows);
+    } else {
+      const dateCondition = targetDate ? `'${targetDate}'` : `date('now', '+8 hours')`;
+      meals = await db.all(`
+        SELECT * FROM meals 
+        WHERE userId = ? AND date(createdAt, '+8 hours') = ${dateCondition}
+        ORDER BY createdAt DESC
+      `, [userId]);
+    }
     
     const totals = meals.reduce((acc, meal) => {
       acc.calories += meal.calories || 0;
@@ -270,7 +345,7 @@ app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.userId;
     // 只能删除自己的记录
-    await db.run('DELETE FROM meals WHERE id = ? AND userId = ?', [id, userId]);
+    await dbRun('DELETE FROM meals WHERE id = ? AND userId = ?', [id, userId]);
     res.json({ success: true });
   } catch (error) {
     console.error("删除记录失败:", error);
@@ -281,7 +356,7 @@ app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
 // 获取用户 Token 消耗状态
 app.get('/api/user/status', authenticateToken, async (req, res) => {
   try {
-    const result = await db.get('SELECT SUM(totalTokensUsed) as total FROM users');
+    const result = await dbGet('SELECT SUM(totalTokensUsed) as total FROM users');
     res.json({ 
       model: 'gemini-2.5-flash', 
       totalTokensUsed: result?.total || 0 
@@ -325,7 +400,7 @@ app.post('/api/coach', authenticateToken, async (req, res) => {
     
     const tokens = result.response.usageMetadata?.totalTokenCount || 0;
     if (tokens > 0 && req.user) {
-      await db.run('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, req.user.userId]);
+      await dbRun('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, req.user.userId]);
     }
 
     res.json({ advice: result.response.text(), tokensUsedThisRequest: tokens });
