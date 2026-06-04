@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 
-export default function CameraCapture({ onCapture }) {
+export default function CameraCapture({ onCapture, modelName }) {
   const fileInputRef = useRef(null);
 
   const handleAreaClick = () => {
@@ -63,6 +63,12 @@ export default function CameraCapture({ onCapture }) {
       <div style={styles.tips}>
         <p>💡 提示：尽量从正上方拍摄，保证光线充足。</p>
       </div>
+      
+      {modelName && (
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', opacity: 0.6, marginTop: '8px', marginBottom: '8px' }}>
+          正在使用: {modelName}
+        </div>
+      )}
     </div>
   );
 }

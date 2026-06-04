@@ -195,7 +195,7 @@ function App() {
 
       {currentTab === 'camera' && (
         <>
-          {appState === 'capture' && <CameraCapture onCapture={handleCapture} />}
+          {appState === 'capture' && <CameraCapture onCapture={handleCapture} modelName={tokenInfo.model} />}
           
           {appState === 'analyzing' && (
             <AIAnalyzer 
