@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import ProPaywall from './ProPaywall';
+import moment from 'moment-timezone';
 
-const getPast7Days = () => {
+const getPast7Days = (tz) => {
   const dates = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
+    const d = moment().tz(tz).subtract(i, 'days');
     dates.push(d);
   }
-  return dates; // 取消 reverse()，使日期从左往右递增（变晚）
+  return dates;
 };
 
-const formatDate = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+const formatDate = (momentDate) => {
+  return momentDate.format('YYYY-MM-DD');
 };
 
-export default function HistoryList({ goal, token }) {
-  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+export default function HistoryList({ goal, token, timezone }) {
+  const [selectedDate, setSelectedDate] = useState(moment().tz(timezone || 'Asia/Shanghai').format('YYYY-MM-DD'));
   const [meals, setMeals] = useState([]);
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [loading, setLoading] = useState(true);
@@ -27,16 +24,16 @@ export default function HistoryList({ goal, token }) {
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   
-  const weekDates = getPast7Days();
+  const weekDates = getPast7Days(timezone);
 
   useEffect(() => {
     fetchHistory();
-  }, [selectedDate]);
+  }, [selectedDate, timezone]);
 
   const fetchHistory = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/meals?date=${selectedDate}`, {
+      const res = await fetch(`/api/meals?date=${selectedDate}&tz=${timezone}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -106,8 +103,8 @@ export default function HistoryList({ goal, token }) {
         {weekDates.map(date => {
           const dateStr = formatDate(date);
           const isSelected = dateStr === selectedDate;
-          const dayName = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
-          const isToday = dateStr === formatDate(new Date());
+          const dayName = ['日', '一', '二', '三', '四', '五', '六'][date.day()];
+          const isToday = dateStr === moment().tz(timezone).format('YYYY-MM-DD');
           return (
             <div 
               key={dateStr} 

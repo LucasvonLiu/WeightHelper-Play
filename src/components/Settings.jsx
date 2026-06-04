@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 
-export default function Settings({ currentGoal, onSaveGoal }) {
+export default function Settings({ currentGoal, onSaveGoal, currentTimezone, onSaveTimezone }) {
   const [goal, setGoal] = useState(currentGoal);
+  const [tz, setTz] = useState(currentTimezone || 'Asia/Shanghai');
 
   const handleSave = () => {
     onSaveGoal(Number(goal));
-    alert("目标已保存！");
+    onSaveTimezone(tz);
+    alert("设置已保存！");
   };
 
   return (
@@ -24,6 +26,22 @@ export default function Settings({ currentGoal, onSaveGoal }) {
             style={styles.input}
           />
           <span style={styles.unit}>大卡</span>
+        </div>
+
+        <h3 style={styles.cardTitle} style={{marginTop: '24px'}}>时区设置</h3>
+        <p style={styles.cardDesc}>选择您所在的时区，确保三餐记录日期准确。</p>
+
+        <div style={styles.inputGroup}>
+          <select 
+            value={tz} 
+            onChange={(e) => setTz(e.target.value)}
+            style={styles.select}
+          >
+            <option value="Asia/Shanghai">北京时间 (UTC+8)</option>
+            <option value="Europe/Berlin">柏林时间 (UTC+1)</option>
+            <option value="America/New_York">纽约时间 (UTC-5)</option>
+            <option value="America/Chicago">休斯敦时间 (UTC-6)</option>
+          </select>
         </div>
 
         <button style={styles.saveBtn} onClick={handleSave}>
@@ -98,5 +116,18 @@ const styles = {
     fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
+  },
+  select: {
+    flex: 1,
+    minWidth: 0,
+    padding: '16px',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+    border: '2px solid #eee',
+    borderRadius: '12px',
+    outline: 'none',
+    appearance: 'none',
+    backgroundColor: '#fff',
   }
 };

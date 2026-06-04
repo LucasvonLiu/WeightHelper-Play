@@ -9,6 +9,7 @@ import { open } from 'sqlite';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pg from 'pg';
+import moment from 'moment-timezone';
 
 const { Pool } = pg;
 
@@ -304,24 +305,26 @@ app.post('/api/meals', authenticateToken, async (req, res) => {
 
 app.get('/api/meals', authenticateToken, async (req, res) => {
   try {
-    const targetDate = req.query.date;
+    const tz = req.query.tz || 'Asia/Shanghai';
+    const targetDate = req.query.date || moment().tz(tz).format('YYYY-MM-DD');
     const userId = req.user.userId;
     let meals;
 
+    const startUtc = moment.tz(targetDate, tz).startOf('day').utc().format('YYYY-MM-DD HH:mm:ss');
+    const endUtc = moment.tz(targetDate, tz).endOf('day').utc().format('YYYY-MM-DD HH:mm:ss');
+
     if (isPostgres) {
-      const dateCondition = targetDate ? `'${targetDate}'` : `(CURRENT_TIMESTAMP + interval '8 hours')::date`;
       meals = await pgPool.query(`
         SELECT * FROM meals 
-        WHERE userId = $1 AND (createdAt + interval '8 hours')::date = ${dateCondition}
+        WHERE userId = $1 AND createdAt >= $2 AND createdAt <= $3
         ORDER BY createdAt DESC
-      `, [userId]).then(res => res.rows);
+      `, [userId, startUtc, endUtc]).then(res => res.rows);
     } else {
-      const dateCondition = targetDate ? `'${targetDate}'` : `date('now', '+8 hours')`;
       meals = await db.all(`
         SELECT * FROM meals 
-        WHERE userId = ? AND date(createdAt, '+8 hours') = ${dateCondition}
+        WHERE userId = ? AND createdAt >= ? AND createdAt <= ?
         ORDER BY createdAt DESC
-      `, [userId]);
+      `, [userId, startUtc, endUtc]);
     }
     
     const totals = meals.reduce((acc, meal) => {

@@ -55,9 +55,18 @@ function App() {
     return Number(localStorage.getItem('weighthelper_goal')) || 2000;
   });
 
+  const [timezone, setTimezone] = useState(() => {
+    return localStorage.getItem('weighthelper_timezone') || 'Asia/Shanghai';
+  });
+
   const handleSaveGoal = (newGoal) => {
     setGoal(newGoal);
     localStorage.setItem('weighthelper_goal', newGoal);
+  };
+
+  const handleSaveTimezone = (newTz) => {
+    setTimezone(newTz);
+    localStorage.setItem('weighthelper_timezone', newTz);
   };
 
   // 当进入分析状态时，触发真实的后端 API 请求
@@ -184,9 +193,16 @@ function App() {
         </>
       )}
       
-      {currentTab === 'history' && <HistoryList goal={goal} token={token} />}
+      {currentTab === 'history' && <HistoryList goal={goal} token={token} timezone={timezone} />}
       
-      {currentTab === 'settings' && <Settings currentGoal={goal} onSaveGoal={handleSaveGoal} />}
+      {currentTab === 'settings' && (
+        <Settings 
+          currentGoal={goal} 
+          onSaveGoal={handleSaveGoal} 
+          currentTimezone={timezone}
+          onSaveTimezone={handleSaveTimezone}
+        />
+      )}
 
       <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
     </div>
