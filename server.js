@@ -153,7 +153,22 @@ async function dbInsertAndGetId(query, params = []) {
   }
 }
 
-app.post('/api/analyze', async (req, res) => {
+
+// --- 鉴权中间件 ---
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  
+  if (token == null) return res.status(401).json({ error: '请先登录' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: '登录态失效，请重新登录' });
+    req.user = user;
+    next();
+  });
+};
+
+app.post('/api/analyze', authenticateToken, async (req, res) => {
   try {
     const { image } = req.body;
     if (!image) {
@@ -218,13 +233,8 @@ app.post('/api/analyze', async (req, res) => {
     const nutritionData = JSON.parse(responseText);
 
     const tokens = result.response.usageMetadata?.totalTokenCount || 0;
-    if (tokens > 0 && req.headers['authorization']) {
-        const token = req.headers['authorization'].split(' ')[1];
-        jwt.verify(token, JWT_SECRET, async (err, decoded) => {
-            if (!err) {
-                await dbRun('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, decoded.userId]);
-            }
-        });
+    if (tokens > 0) {
+      await dbRun('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, req.user.userId]);
     }
 
     res.json(nutritionData);
@@ -233,20 +243,6 @@ app.post('/api/analyze', async (req, res) => {
     res.status(500).json({ error: "AI 分析失败，请检查 API Key 或图片格式。" });
   }
 });
-
-// --- 鉴权中间件 ---
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-  
-  if (token == null) return res.status(401).json({ error: '请先登录' });
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: '登录态失效，请重新登录' });
-    req.user = user;
-    next();
-  });
-};
 
 // --- 用户认证接口 ---
 app.post('/api/register', async (req, res) => {
@@ -363,10 +359,10 @@ app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
 // 获取用户 Token 消耗状态
 app.get('/api/user/status', authenticateToken, async (req, res) => {
   try {
-    const result = await dbGet('SELECT SUM(totalTokensUsed) as total FROM users');
+    const result = await dbGet('SELECT totalTokensUsed FROM users WHERE id = ?', [req.user.userId]);
     res.json({ 
       model: 'gemini-2.5-flash', 
-      totalTokensUsed: result?.total || 0 
+      totalTokensUsed: result?.totalTokensUsed || 0 
     });
   } catch (error) {
     res.status(500).json({ error: "获取状态失败" });
