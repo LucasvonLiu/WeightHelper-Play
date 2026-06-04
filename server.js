@@ -348,9 +348,9 @@ app.get('/api/meals', authenticateToken, async (req, res) => {
 
     if (isPostgres) {
       meals = await pgPool.query(`
-        SELECT * FROM meals 
-        WHERE userId = $1 AND createdAt >= $2 AND createdAt <= $3
-        ORDER BY createdAt DESC
+        SELECT id, userid as "userId", foodname as "foodName", calories, protein, carbs, fats, createdat as "createdAt" FROM meals 
+        WHERE userid = $1 AND createdat >= $2 AND createdat <= $3
+        ORDER BY createdat DESC
       `, [userId, startUtc, endUtc]).then(res => res.rows);
     } else {
       meals = await db.all(`
