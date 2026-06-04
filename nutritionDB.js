@@ -41,4 +41,4 @@ const nutritionDB = {
   "青椒": { calories: 22, protein: 1.0, carbs: 4.6, fats: 0.2 }
 };
 
-module.exports = nutritionDB;
+export default nutritionDB;

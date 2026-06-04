@@ -10,10 +10,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pg from 'pg';
 import moment from 'moment-timezone';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const nutritionDB = require('./nutritionDB.js');
+import nutritionDB from './nutritionDB.js';
 
 const { Pool } = pg;
 
