@@ -208,14 +208,56 @@ async function generateWithFallback(config) {
   throw new Error("所有备选 AI 模型均已耗尽配额或不可用。");
 }
 
+app.post('/api/recognize_basic', authenticateToken, async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ error: "图片数据缺失" });
+
+    const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!match) return res.status(400).json({ error: "图片格式有误，必须为 Base64" });
+    const mimeType = match[1];
+    const base64Data = match[2];
+
+    const prompt = `请识别图中的主体食物。返回JSON格式：{"name": "食物名(简短)", "quantity": 数量(必须是纯数字, 默认1), "unit": "单位(如: 碗/个/盘/克)"}`;
+
+    const { result } = await generateWithFallback({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: prompt },
+            { inlineData: { data: base64Data, mimeType: mimeType } }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+      }
+    });
+
+    const responseText = result.response.text();
+    const basicInfo = JSON.parse(responseText);
+
+    const tokens = result.response.usageMetadata?.totalTokenCount || 0;
+    if (tokens > 0) {
+      await dbRun('UPDATE users SET totalTokensUsed = totalTokensUsed + ? WHERE id = ?', [tokens, req.user.userId]);
+    }
+
+    res.json(basicInfo);
+  } catch (error) {
+    console.error("AI 粗粒度识别失败:", error);
+    res.status(500).json({ error: "AI 粗粒度识别失败" });
+  }
+});
+
 app.post('/api/analyze', authenticateToken, async (req, res) => {
   try {
-    const { image, userInput } = req.body;
+    const { image, foodName, quantity, unit } = req.body;
     if (!image) {
       return res.status(400).json({ error: "图片数据缺失" });
     }
 
-    // 提取 base64 数据和 MIME 类型
     const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
     if (!match) {
       return res.status(400).json({ error: "图片格式有误，必须为 Base64" });
@@ -225,17 +267,17 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
 
     const prompt = `
       你需要像专业营养师和大厨一样，拆解图中的食物。
-      ${userInput ? `用户提供了以下重要提示，请以此为最高准则（它可能是菜名或重量）：【${userInput}】` : ''}
+      ${foodName ? `用户已经明确了这是一份【${quantity} ${unit}】的【${foodName}】。请以此为绝对基准（它是你的首要目标）！` : ''}
       
       核心指令：
-      1. 识别图中的食材。即使有些调料（如“食用油”、“白糖”、“酱油”）看不见，也要根据菜品的光泽度、烹饪方式（如油炸、红烧、爆炒）合理地预估它们的用量。
+      1. 根据这份总体量，拆解其包含的所有底层食材及它们的绝对克数（含隐藏的油盐糖等）。即使有些调料（如“食用油”、“白糖”、“酱油”）看不见，也要合理地预估它们的用量。
       2. 严格按以下 JSON 格式返回。details 中的 amount 必须是纯数字（代表克数）。你不需要计算最终的总卡路里。
       3. details 中的 name 尽量使用常见食材名，如"猪肉(肥瘦)", "米饭", "食用油", "鸡蛋", "番茄", "老干妈" 等。
       4. 为了防止本地数据库没有你说的食材，请同时附带一个你预估的该食材的“每 100g 营养单价”(fallbackMacros)。
       
       返回格式：
       {
-        "foodName": "食物名称",
+        "foodName": "${foodName || '未知食物'}",
         "details": [
           { 
             "name": "食材名称", 
@@ -295,7 +337,7 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
     });
 
     const nutritionData = {
-      foodName: aiData.foodName,
+      foodName: foodName || aiData.foodName,
       details: processedDetails,
       calories: Math.round(totalCalories),
       protein: Math.round(totalProtein),

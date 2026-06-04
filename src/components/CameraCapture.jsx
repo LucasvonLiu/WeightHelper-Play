@@ -1,9 +1,14 @@
 import React, { useRef, useState } from 'react';
 
-export default function CameraCapture({ onCapture, modelName }) {
+export default function CameraCapture({ onCapture, modelName, token }) {
   const fileInputRef = useRef(null);
   const [previewImage, setPreviewImage] = useState(null);
-  const [userInput, setUserInput] = useState('');
+  
+  // V2.1.1 新增结构化状态
+  const [foodName, setFoodName] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [unit, setUnit] = useState('');
+  const [isRecognizing, setIsRecognizing] = useState(false);
 
   const handleAreaClick = () => {
     if (fileInputRef.current) {
@@ -77,13 +82,47 @@ export default function CameraCapture({ onCapture, modelName }) {
     img.src = previewImage;
   };
 
-  const handleSubmit = () => {
-    onCapture(previewImage, userInput);
+  // v2.1.1 核心路由逻辑：单按钮智能分发
+  const handleAnalyze = async () => {
+    // 路线 A 第一步：如果三个参数都为空，先去粗粒度识别
+    if (!foodName && !quantity && !unit) {
+      setIsRecognizing(true);
+      try {
+        const res = await fetch('/api/recognize_basic', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ image: previewImage })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          setFoodName(data.name || '');
+          setQuantity(data.quantity ? String(data.quantity) : '1');
+          setUnit(data.unit || '份');
+        } else {
+          alert('智能识别失败，请直接手动输入');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('智能识别失败，请直接手动输入');
+      } finally {
+        setIsRecognizing(false);
+      }
+      return; // 停留在此页面，让用户核对
+    }
+
+    // 路线 A 第二步（或路线 B）：已有数据，直接发起深度分析
+    onCapture(previewImage, { foodName, quantity, unit });
   };
 
   const handleCancel = () => {
     setPreviewImage(null);
-    setUserInput('');
+    setFoodName('');
+    setQuantity('');
+    setUnit('');
   };
 
   if (previewImage) {
@@ -91,25 +130,57 @@ export default function CameraCapture({ onCapture, modelName }) {
       <div className="capture-container fade-in" style={styles.container}>
         <div style={styles.previewWrapper}>
           <img src={previewImage} alt="preview" style={styles.previewImage} />
-          <button onClick={handleRotate} style={styles.rotateBtn}>🔄 旋转</button>
+          <button onClick={handleRotate} style={styles.rotateBtn} disabled={isRecognizing}>🔄 旋转</button>
         </div>
         
-        <div style={{width: '100%', marginBottom: '24px'}}>
-          <label style={{display: 'block', fontSize: '14px', marginBottom: '8px', color: 'var(--text-secondary)'}}>
-            👉（可选）这是什么菜？分量多少？
-          </label>
-          <input 
-            type="text" 
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="如：番茄炒蛋 300g 或 一大碗面"
-            style={styles.textInput}
-          />
+        <div style={styles.formContainer}>
+          <div style={styles.formHint}>
+            <span style={{fontWeight: 600}}>核对食物信息</span>
+            <span style={{fontSize: '12px', color: '#888'}}>直接分析 或 补全信息</span>
+          </div>
+          
+          <div style={styles.formRow}>
+            <div style={{flex: 2}}>
+              <label style={styles.label}>名称</label>
+              <input 
+                type="text" 
+                value={foodName}
+                onChange={(e) => setFoodName(e.target.value)}
+                placeholder="如: 番茄炒蛋"
+                style={styles.input}
+                disabled={isRecognizing}
+              />
+            </div>
+            <div style={{flex: 1}}>
+              <label style={styles.label}>数量</label>
+              <input 
+                type="number" 
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="1"
+                style={styles.input}
+                disabled={isRecognizing}
+              />
+            </div>
+            <div style={{flex: 1}}>
+              <label style={styles.label}>单位</label>
+              <input 
+                type="text" 
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                placeholder="盘/个"
+                style={styles.input}
+                disabled={isRecognizing}
+              />
+            </div>
+          </div>
         </div>
 
         <div style={{display: 'flex', gap: '12px', width: '100%'}}>
-          <button onClick={handleCancel} style={styles.secondaryBtn}>重拍</button>
-          <button onClick={handleSubmit} style={styles.primaryBtn}>开始分析</button>
+          <button onClick={handleCancel} style={styles.secondaryBtn} disabled={isRecognizing}>重拍</button>
+          <button onClick={handleAnalyze} style={styles.primaryBtn} disabled={isRecognizing}>
+            {isRecognizing ? '正在智能识别...' : '🚀 分析'}
+          </button>
         </div>
       </div>
     );
@@ -211,7 +282,7 @@ const styles = {
   previewWrapper: {
     width: '100%',
     position: 'relative',
-    marginBottom: '24px',
+    marginBottom: '20px',
     flex: 1,
     display: 'flex',
     justifyContent: 'center',
@@ -219,7 +290,7 @@ const styles = {
     backgroundColor: '#000',
     borderRadius: '16px',
     overflow: 'hidden',
-    minHeight: '200px'
+    minHeight: '180px'
   },
   previewImage: {
     maxWidth: '100%',
@@ -228,8 +299,8 @@ const styles = {
   },
   rotateBtn: {
     position: 'absolute',
-    bottom: '16px',
-    right: '16px',
+    bottom: '12px',
+    right: '12px',
     backgroundColor: 'rgba(0,0,0,0.6)',
     color: '#fff',
     border: 'none',
@@ -238,14 +309,42 @@ const styles = {
     fontSize: '14px',
     cursor: 'pointer'
   },
-  textInput: {
+  formContainer: {
     width: '100%',
+    backgroundColor: 'var(--card-bg)',
     padding: '16px',
-    borderRadius: '12px',
+    borderRadius: '16px',
+    boxShadow: 'var(--shadow-sm)',
+    marginBottom: '20px'
+  },
+  formHint: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+    color: 'var(--text-primary)',
+    fontSize: '14px'
+  },
+  formRow: {
+    display: 'flex',
+    gap: '12px',
+    width: '100%'
+  },
+  label: {
+    display: 'block',
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    marginBottom: '6px'
+  },
+  input: {
+    width: '100%',
+    padding: '12px',
+    borderRadius: '10px',
     border: '1px solid #ddd',
-    fontSize: '16px',
+    fontSize: '15px',
     outline: 'none',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    backgroundColor: '#fafafa'
   },
   primaryBtn: {
     flex: 2,
@@ -256,7 +355,8 @@ const styles = {
     fontSize: '16px',
     fontWeight: '600',
     border: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
   },
   secondaryBtn: {
     flex: 1,

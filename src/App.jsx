@@ -99,7 +99,7 @@ function App() {
     }
   };
 
-  const [currentUserInput, setCurrentUserInput] = useState('');
+  const [currentFoodData, setCurrentFoodData] = useState({});
 
   // 当进入分析状态时，触发真实的后端 API 请求
   useEffect(() => {
@@ -115,7 +115,12 @@ function App() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ image: currentImage, userInput: currentUserInput }),
+          body: JSON.stringify({ 
+            image: currentImage, 
+            foodName: currentFoodData.foodName,
+            quantity: currentFoodData.quantity,
+            unit: currentFoodData.unit
+          }),
         });
 
         if (!response.ok) {
@@ -143,17 +148,17 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [appState, currentImage, currentUserInput]);
+  }, [appState, currentImage, currentFoodData]);
 
-  const handleCapture = (base64Image, userInput = '') => {
+  const handleCapture = (base64Image, foodData = {}) => {
     setCurrentImage(base64Image);
-    setCurrentUserInput(userInput);
+    setCurrentFoodData(foodData);
     setAppState('analyzing');
   };
 
   const handleReset = () => {
     setCurrentImage(null);
-    setCurrentUserInput('');
+    setCurrentFoodData({});
     setAnalysisResult(null);
     setAppState('capture');
   };
@@ -188,18 +193,16 @@ function App() {
     <div className="app-wrapper">
       {/* 顶部简单的状态栏 */}
       <div style={{ padding: '40px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>WeightHelper</div>
+        <div style={{ fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>WeightHelper <span style={{fontSize: '12px', color: 'var(--accent-green)', marginLeft: '4px'}}>v2.1.1</span></div>
         <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
           {username} 
           <span onClick={handleLogout} style={{ color: 'var(--accent-green)', marginLeft: '12px', fontWeight: '600', cursor: 'pointer' }}>退出</span>
         </div>
       </div>
 
-
-
       {currentTab === 'camera' && (
         <>
-          {appState === 'capture' && <CameraCapture onCapture={handleCapture} modelName={tokenInfo.model} />}
+          {appState === 'capture' && <CameraCapture onCapture={handleCapture} modelName={tokenInfo.model} token={token} />}
           
           {appState === 'analyzing' && (
             <AIAnalyzer 
