@@ -15,7 +15,26 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
     setPortions(foods.map(() => 1));
   }, [dataStr]);
 
-  if (!editableFoods.length) return null;
+  if (!editableFoods.length) {
+    return (
+      <div className="nutrition-card fade-in" style={{...styles.container, justifyContent: 'center', alignItems: 'center'}}>
+        <div style={{textAlign: 'center', marginBottom: '24px'}}>
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{opacity: 0.5, marginBottom: '16px'}}>
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <h3 style={{color: 'var(--text-primary)', marginTop: '16px', fontSize: '20px'}}>未识别到食物</h3>
+          <p style={{color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px'}}>AI 在图里没找到吃的呢，换张图试试？</p>
+        </div>
+        {onReset && (
+          <button style={{...styles.secondaryBtn, padding: '12px 24px', backgroundColor: '#f0f0f0', color: 'var(--text-primary)'}} onClick={onReset}>
+            重新选择图片
+          </button>
+        )}
+      </div>
+    );
+  }
 
   const handlePortionSelect = (index, ratio) => {
     const newPortions = [...portions];
@@ -310,10 +329,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
               <div style={styles.portionContainer}>
                 <div style={styles.portionChips}>
                   {[
-                    { label: '1/4 份', value: 0.25 },
-                    { label: '1/3 份', value: 0.333 },
                     { label: '1/2 份', value: 0.5 },
-                    { label: '2/3 份', value: 0.667 },
                     { label: '1 份', value: 1 },
                     { label: '1 1/2 份', value: 1.5 },
                     { label: '2 份', value: 2 },
