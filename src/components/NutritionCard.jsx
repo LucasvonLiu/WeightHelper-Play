@@ -334,10 +334,11 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
               <div style={styles.portionContainer}>
                 <div style={styles.portionChips}>
                   {[
+                    { label: '1/4 份', value: 0.25 },
                     { label: '1/2 份', value: 0.5 },
+                    { label: '3/4 份', value: 0.75 },
                     { label: '1 份', value: 1 },
-                    { label: '1 1/2 份', value: 1.5 },
-                    { label: '2 份', value: 2 },
+                    { label: '1 ½ 份', value: 1.5 },
                   ].map(p => (
                     <button 
                       key={p.value} 
@@ -352,6 +353,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
                   ))}
 
                   {expandedPortions[index] && [
+                    { label: '2 份', value: 2 },
                     { label: '3 份', value: 3 },
                     { label: '4 份', value: 4 },
                     { label: '5 份', value: 5 },

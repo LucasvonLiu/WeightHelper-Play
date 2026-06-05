@@ -1,31 +1,51 @@
 import React, { useEffect, useState } from 'react';
 
 export default function AIAnalyzer({ imageUrl }) {
-  const [loadingText, setLoadingText] = useState('正在上传并分析图像...');
+  const [logs, setLogs] = useState(['连接到 AI 引擎...']);
 
   useEffect(() => {
-    // 仅模拟文本变化，增加趣味性和仪式感，不控制加载结束状态
-    const timer1 = setTimeout(() => setLoadingText('正在识别食物特征与大小...'), 1200);
-    const timer2 = setTimeout(() => setLoadingText('正在估算克数与热量...'), 2400);
-    const timer3 = setTimeout(() => setLoadingText('正在计算三大宏量营养素...'), 3600);
+    const steps = [
+      { text: '正在识别餐具及食物特征...', time: 800 },
+      { text: '发现潜在的食材与配料...', time: 1600 },
+      { text: '正在估算克数与热量...', time: 2400 },
+      { text: '正在计算三大宏量营养素...', time: 3200 },
+      { text: '正在生成分析报告...', time: 4000 },
+    ];
+    
+    const timers = steps.map(step => 
+      setTimeout(() => setLogs(prev => [...prev, step.text]), step.time)
+    );
 
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   return (
     <div className="analyzer-container fade-in" style={styles.container}>
-      <h2 style={styles.headerTitle}>AI 分析中</h2>
       <div style={styles.imageWrapper}>
         <img src={imageUrl} alt="Uploaded food" style={styles.image} />
-        <div style={styles.scannerBar}></div>
+        <div style={styles.frostedOverlay}></div>
       </div>
       <div style={styles.loadingInfo}>
-        <div style={styles.spinner}></div>
-        <p style={styles.loadingText}>{loadingText}</p>
+        <h3 style={{fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{animation: 'pulse 1.5s infinite opacity'}}>
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 16v-4"></path>
+            <path d="M12 8h.01"></path>
+          </svg>
+          Thinking...
+        </h3>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px', width: '100%', maxWidth: '300px'}}>
+          {logs.map((log, i) => (
+            <p key={i} style={{
+              ...styles.loadingText,
+              opacity: i === logs.length - 1 ? 1 : 0.5,
+              color: i === logs.length - 1 ? 'var(--text-primary)' : 'var(--text-secondary)',
+              transition: 'all 0.3s ease'
+            }}>
+              {log}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -37,13 +57,9 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     height: '100vh',
-  },
-  headerTitle: {
-    fontSize: '20px',
-    fontWeight: '500',
-    marginBottom: '32px',
-    color: 'var(--text-primary)',
+    paddingBottom: '10vh'
   },
   imageWrapper: {
     width: '100%',
@@ -58,15 +74,12 @@ const styles = {
     height: '100%',
     objectFit: 'cover',
   },
-  scannerBar: {
+  frostedOverlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '3px',
-    backgroundColor: 'var(--accent-green)',
-    boxShadow: '0 0 10px var(--accent-green)',
-    animation: 'scan 2s ease-in-out infinite alternate',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(163, 188, 167, 0.4)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
   },
   loadingInfo: {
     marginTop: '40px',
@@ -74,21 +87,11 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
   },
-  spinner: {
-    width: '32px',
-    height: '32px',
-    border: '3px solid var(--accent-green-light)',
-    borderTopColor: 'var(--accent-green)',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-    marginBottom: '16px',
-  },
   loadingText: {
-    fontSize: '16px',
-    color: 'var(--text-secondary)',
+    fontSize: '15px',
     fontWeight: '500',
-    textAlign: 'center',
-    padding: '0 20px',
+    textAlign: 'left',
+    margin: 0,
   }
 };
 
