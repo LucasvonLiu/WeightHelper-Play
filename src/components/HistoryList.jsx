@@ -71,6 +71,30 @@ export default function HistoryList({ goal, token, timezone }) {
     }
   };
 
+  const handleUpdateMeal = async (updatedMeal) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/meals/${selectedMeal.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(updatedMeal)
+      });
+      if (res.ok) {
+        setSelectedMeal(null);
+        fetchHistory();
+      } else {
+        alert("更新失败");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
   const C = 226.19; // R=36
   const calPct = Math.min((totals.calories / goal) * 100, 100);
   const calOffset = C - (calPct / 100) * C;
@@ -241,7 +265,8 @@ export default function HistoryList({ goal, token, timezone }) {
                 fats: selectedMeal.fats,
                 details: selectedMeal.details || []
               }} 
-              readOnly={true}
+              readOnly={false}
+              onSave={handleUpdateMeal}
             />
           </div>
         </div>

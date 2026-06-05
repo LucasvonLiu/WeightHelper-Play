@@ -267,23 +267,31 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
     const base64Data = match[2];
 
     const prompt = `
-      你需要像专业营养师和大厨一样，拆解图中的食物。
-      ${foodName ? `用户已经明确了这是一份【${quantity} ${unit}】的【${foodName}】。请以此为绝对基准（它是你的首要目标）！` : ''}
+      你需要像专业营养师和大厨一样，分析图中的食物。
+      ${foodName ? `用户已经明确了其中包含【${quantity} ${unit}】的【${foodName}】。请以此为重要参考！` : ''}
       
       核心指令：
-      1. 根据这份总体量，拆解其包含的所有底层食材及它们的绝对克数（含隐藏的油盐糖等）。即使有些调料（如“食用油”、“白糖”、“酱油”）看不见，也要合理地预估它们的用量。
-      2. 严格按以下 JSON 格式返回。details 中的 amount 必须是纯数字（代表克数）。你不需要计算最终的总卡路里。
-      3. details 中的 name 尽量使用常见食材名，如"猪肉(肥瘦)", "米饭", "食用油", "鸡蛋", "番茄", "老干妈" 等。
-      4. 为了防止本地数据库没有你说的食材，请同时附带一个你预估的该食材的“每 100g 营养单价”(fallbackMacros)。
+      1. 识别图中有几个餐具/容器，餐具中的食物分别是什么。
+      2. 为每个独立的食物提供名称（名称需暗示做法和配料情况，如"西红柿炒鸡蛋(重油)", "清蒸鱼"）。
+      3. 估算每个食物的"基础份数"(默认为1) 和 "每份重量(克)"。
+      4. 拆解每个食物包含的所有底层食材及绝对克数（含隐藏的油盐糖等），这些克数是基于"1份"的量。
+      5. 严格按以下 JSON 格式返回。details 中的 amount 必须是纯数字（代表克数）。你不需要计算最终的总卡路里。
+      6. details 中的 name 尽量使用常见食材名，并附带你预估的该食材的“每100g营养单价”(fallbackMacros)。
       
       返回格式：
       {
-        "foodName": "${foodName || '未知食物'}",
-        "details": [
-          { 
-            "name": "食材名称", 
-            "amount": 100,
-            "fallbackMacros": { "calories": 100, "protein": 5, "carbs": 10, "fats": 5 }
+        "foods": [
+          {
+            "foodName": "食物A (做法)",
+            "portions": 1,
+            "gramsPerPortion": 200,
+            "details": [
+              { 
+                "name": "食材名称", 
+                "amount": 100,
+                "fallbackMacros": { "calories": 100, "protein": 5, "carbs": 10, "fats": 5 }
+              }
+            ]
           }
         ]
       }
@@ -313,37 +321,45 @@ app.post('/api/analyze', authenticateToken, async (req, res) => {
     const responseText = result.response.text();
     const aiData = JSON.parse(responseText);
 
-    // 计算总和并绑定每百克数据
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalCarbs = 0;
-    let totalFats = 0;
+    // 处理多个食物
+    const processedFoods = (aiData.foods || []).map(food => {
+      let totalCalories = 0;
+      let totalProtein = 0;
+      let totalCarbs = 0;
+      let totalFats = 0;
 
-    const processedDetails = aiData.details.map(item => {
-      // 在本地库查找
-      const dbMacros = nutritionDB[item.name];
-      const macrosPer100g = dbMacros || item.fallbackMacros || { calories: 0, protein: 0, carbs: 0, fats: 0 };
-      
-      const amountRatio = item.amount / 100;
-      totalCalories += macrosPer100g.calories * amountRatio;
-      totalProtein += macrosPer100g.protein * amountRatio;
-      totalCarbs += macrosPer100g.carbs * amountRatio;
-      totalFats += macrosPer100g.fats * amountRatio;
+      const processedDetails = (food.details || []).map(item => {
+        // 在本地库查找
+        const dbMacros = nutritionDB[item.name];
+        const macrosPer100g = dbMacros || item.fallbackMacros || { calories: 0, protein: 0, carbs: 0, fats: 0 };
+        
+        const amountRatio = item.amount / 100;
+        totalCalories += macrosPer100g.calories * amountRatio;
+        totalProtein += macrosPer100g.protein * amountRatio;
+        totalCarbs += macrosPer100g.carbs * amountRatio;
+        totalFats += macrosPer100g.fats * amountRatio;
+
+        return {
+          name: item.name,
+          amount: item.amount,
+          macrosPer100g: macrosPer100g
+        };
+      });
 
       return {
-        name: item.name,
-        amount: item.amount,
-        macrosPer100g: macrosPer100g
+        foodName: food.foodName || "未知食物",
+        portions: food.portions || 1,
+        gramsPerPortion: food.gramsPerPortion || 100,
+        details: processedDetails,
+        calories: Math.round(totalCalories),
+        protein: Math.round(totalProtein),
+        carbs: Math.round(totalCarbs),
+        fats: Math.round(totalFats)
       };
     });
 
     const nutritionData = {
-      foodName: foodName || aiData.foodName,
-      details: processedDetails,
-      calories: Math.round(totalCalories),
-      protein: Math.round(totalProtein),
-      carbs: Math.round(totalCarbs),
-      fats: Math.round(totalFats)
+      foods: processedFoods
     };
 
     const tokens = result.response.usageMetadata?.totalTokenCount || 0;
@@ -531,6 +547,26 @@ app.get('/api/meals/export/csv', authenticateToken, async (req, res) => {
   }
 });
 
+
+// --- 修改记录接口 ---
+app.put('/api/meals/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const { calories, protein, carbs, fats, details } = req.body;
+    
+    const detailsStr = details ? JSON.stringify(details) : '[]';
+    
+    await dbRun(
+      'UPDATE meals SET calories = ?, protein = ?, carbs = ?, fats = ?, details = ? WHERE id = ? AND userId = ?',
+      [calories, protein, carbs, fats, detailsStr, id, userId]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error("更新记录失败:", error);
+    res.status(500).json({ error: "更新失败" });
+  }
+});
 
 // --- 删除记录接口 ---
 app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
