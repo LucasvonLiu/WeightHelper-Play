@@ -46,26 +46,18 @@ export default function InstallPrompt() {
         <div style={styles.header}>
           <div style={styles.titleArea}>
             <span style={styles.icon}>📱</span>
-            <span style={styles.title}>把应用放到桌面</span>
+            <span style={styles.title}>添加到桌面，一键秒开</span>
           </div>
           <button style={styles.closeBtn} onClick={handleClose}>✕</button>
         </div>
         
-        <p style={styles.desc}>
-          告别繁琐网址，像 App 一样秒开！
-        </p>
-        
         {isIOS ? (
           <div style={styles.instruction}>
-            点击浏览器底部的 <span style={styles.highlight}>分享图标</span>
-            <br />
-            然后选择 <span style={styles.highlight}>"添加到主屏幕"</span>
+            点击底部 <span style={styles.highlight}>[分享]</span> ➔ 选择 <span style={styles.highlight}>"添加到主屏幕"</span>
           </div>
         ) : (
           <div style={styles.instruction}>
-            点击浏览器右上角菜单 (⋮)
-            <br />
-            选择 <span style={styles.highlight}>"添加到主屏幕"</span> 或 <span style={styles.highlight}>"安装应用"</span>
+            点击右上角 <span style={styles.highlight}>[⋮]</span> ➔ 选择 <span style={styles.highlight}>"添加到主屏幕"</span>
           </div>
         )}
       </div>
@@ -119,19 +111,14 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  desc: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    marginBottom: '12px',
-    lineHeight: '1.4',
-  },
   instruction: {
     backgroundColor: '#f5f7f5',
     padding: '12px',
     borderRadius: '8px',
-    fontSize: '13px',
+    fontSize: '14px',
     color: 'var(--text-primary)',
-    lineHeight: '1.6',
+    lineHeight: '1.4',
+    marginTop: '4px'
   },
   highlight: {
     fontWeight: '600',
