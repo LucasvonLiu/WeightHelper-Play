@@ -308,13 +308,18 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
             
             {!readOnly && (
               <div style={styles.portionContainer}>
-                <span style={styles.portionLabel}>食用份量</span>
                 <div style={styles.portionChips}>
                   {[
                     { label: '1/4 份', value: 0.25 },
-                    { label: '半份', value: 0.5 },
+                    { label: '1/3 份', value: 0.333 },
+                    { label: '1/2 份', value: 0.5 },
+                    { label: '2/3 份', value: 0.667 },
                     { label: '1 份', value: 1 },
+                    { label: '1 1/2 份', value: 1.5 },
                     { label: '2 份', value: 2 },
+                    { label: '3 份', value: 3 },
+                    { label: '4 份', value: 4 },
+                    { label: '5 份', value: 5 },
                   ].map(p => (
                     <button 
                       key={p.value} 
@@ -337,7 +342,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
                   <span style={styles.detailName}>{item.name}</span>
                   <div style={styles.detailInputWrapper}>
                     <span style={styles.amountInput}>{item.amount}</span>
-                    <span style={{fontSize: '14px', color: 'var(--text-secondary)'}}>g</span>
+                    <span style={{fontSize: '14px', color: 'var(--text-secondary)'}}>g/份</span>
                   </div>
                 </div>
               ))}
