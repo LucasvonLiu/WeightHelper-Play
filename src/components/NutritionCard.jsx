@@ -250,7 +250,20 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
   return (
     <div className="nutrition-card fade-in" style={styles.container}>
       <div style={styles.header}>
-        <h3 style={styles.foodName}>{computedData.foodName}</h3>
+        <h3 style={styles.foodName}>
+          {(() => {
+            const match = computedData.foodName.match(/^(.*?)\s*(\(.*?\)|（.*?）)$/);
+            if (match) {
+              return (
+                <>
+                  <span>{match[1]}</span>
+                  <span style={{display: 'block', fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '500'}}>{match[2]}</span>
+                </>
+              );
+            }
+            return computedData.foodName;
+          })()}
+        </h3>
       </div>
 
       <div style={styles.mainStats}>
@@ -289,7 +302,20 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
         {editableFoods.map((food, index) => (
           <div key={index} style={styles.foodItem}>
             <div style={styles.foodHeader}>
-              <h4 style={styles.foodItemName}>{food.foodName}</h4>
+              <h4 style={styles.foodItemName}>
+                {(() => {
+                  const match = food.foodName.match(/^(.*?)\s*(\(.*?\)|（.*?）)$/);
+                  if (match) {
+                    return (
+                      <>
+                        <span>{match[1]}</span>
+                        <span style={{display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 'normal'}}>{match[2]}</span>
+                      </>
+                    );
+                  }
+                  return food.foodName;
+                })()}
+              </h4>
               <span style={styles.foodItemCalories}>{food.calories} kcal</span>
             </div>
             

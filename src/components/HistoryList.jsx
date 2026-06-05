@@ -208,7 +208,20 @@ export default function HistoryList({ goal, token, timezone }) {
                   )}
                 </div>
                 <div style={styles.mealInfo}>
-                  <h4 style={styles.mealName}>{meal.foodName}</h4>
+                  <h4 style={styles.mealName}>
+                    {(() => {
+                      const match = meal.foodName.match(/^(.*?)\s*(\(.*?\)|（.*?）)$/);
+                      if (match) {
+                        return (
+                          <>
+                            <span>{match[1]}</span>
+                            <span style={{display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 'normal'}}>{match[2]}</span>
+                          </>
+                        );
+                      }
+                      return meal.foodName;
+                    })()}
+                  </h4>
                   <span style={styles.mealTime}>
                     {(() => {
                       const m = moment.utc(meal.createdAt).tz(timezone);
