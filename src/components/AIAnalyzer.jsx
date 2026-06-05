@@ -25,12 +25,7 @@ export default function AIAnalyzer({ imageUrl }) {
         <img src={imageUrl} alt="Uploaded food" style={styles.image} />
         <div style={styles.frostedOverlay}>
           <div style={styles.loadingInfo}>
-            <h3 style={{fontSize: '32px', fontWeight: '800', color: 'var(--accent-green)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', textShadow: '0 2px 10px rgba(255,255,255,0.8)'}}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{animation: 'pulse 1.5s infinite opacity'}}>
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M12 16v-4"></path>
-                <path d="M12 8h.01"></path>
-              </svg>
+            <h3 style={{fontSize: '32px', fontWeight: '800', color: 'var(--accent-green)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', textShadow: '0 2px 10px rgba(255,255,255,0.8)', animation: 'pulse 1.5s infinite opacity'}}>
               Thinking...
             </h3>
             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%', maxWidth: '300px'}}>
@@ -38,7 +33,7 @@ export default function AIAnalyzer({ imageUrl }) {
                 <p key={i} style={{
                   ...styles.loadingText,
                   opacity: i === logs.length - 1 ? 1 : 0.6,
-                  color: i === logs.length - 1 ? '#222' : '#555',
+                  color: 'var(--accent-green)',
                   textShadow: '0 1px 4px rgba(255,255,255,0.6)',
                   transition: 'all 0.3s ease',
                   fontSize: '14px',
