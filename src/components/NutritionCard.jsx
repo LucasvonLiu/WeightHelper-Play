@@ -5,6 +5,11 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
   
   const [editableFoods, setEditableFoods] = useState(() => data?.foods || (data ? [data] : []));
   const [portions, setPortions] = useState(() => (data?.foods || (data ? [data] : [])).map(() => 1));
+  const [expandedPortions, setExpandedPortions] = useState({});
+
+  const toggleExpand = (index) => {
+    setExpandedPortions(prev => ({...prev, [index]: !prev[index]}));
+  };
 
   const dataStr = JSON.stringify(data);
 
@@ -333,6 +338,20 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
                     { label: '1 份', value: 1 },
                     { label: '1 1/2 份', value: 1.5 },
                     { label: '2 份', value: 2 },
+                  ].map(p => (
+                    <button 
+                      key={p.value} 
+                      onClick={() => handlePortionSelect(index, p.value)}
+                      style={{
+                        ...styles.portionChip, 
+                        ...(portions[index] === p.value ? styles.portionChipActive : {})
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+
+                  {expandedPortions[index] && [
                     { label: '3 份', value: 3 },
                     { label: '4 份', value: 4 },
                     { label: '5 份', value: 5 },
@@ -348,6 +367,23 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
                       {p.label}
                     </button>
                   ))}
+
+                  <button
+                    onClick={() => toggleExpand(index)}
+                    style={{
+                      ...styles.portionChip,
+                      padding: '6px 10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: expandedPortions[index] ? '#f5f5f5' : 'transparent',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expandedPortions[index] ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
                 </div>
               </div>
             )}
