@@ -164,32 +164,28 @@ function App() {
     setAppState('capture');
   };
 
-  const handleSaveMeal = async (mealDataArray) => {
+  const handleSaveMeal = async (mealData) => {
     try {
       setIsSaving(true);
-      const foodsToSave = Array.isArray(mealDataArray) ? mealDataArray : [mealDataArray];
       
-      const promises = foodsToSave.map(mealData => 
-        fetch('/api/meals', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-          },
-          body: JSON.stringify({ 
-            ...mealData, 
-            image: currentImage,
-            details: mealData.details || []
-          }),
-        })
-      );
+      const res = await fetch('/api/meals', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          ...mealData, 
+          image: currentImage,
+          details: mealData.details || []
+        }),
+      });
 
-      const responses = await Promise.all(promises);
-      if (responses.every(r => r.ok)) {
+      if (res.ok) {
         handleReset();
         setCurrentTab('history');
       } else {
-        alert("部分或全部记录保存失败，请重试");
+        alert("保存记录失败，请重试");
       }
     } catch (err) {
       console.error(err);

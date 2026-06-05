@@ -257,14 +257,18 @@ export default function HistoryList({ goal, token, timezone }) {
             )}
             <NutritionCard 
               imageUrl={selectedMeal.image}
-              data={{
-                foodName: selectedMeal.foodName,
-                calories: selectedMeal.calories,
-                protein: selectedMeal.protein,
-                carbs: selectedMeal.carbs,
-                fats: selectedMeal.fats,
-                details: selectedMeal.details || []
-              }} 
+              data={
+                selectedMeal.details && selectedMeal.details.isMulti 
+                  ? { foods: selectedMeal.details.foods }
+                  : {
+                      foodName: selectedMeal.foodName,
+                      calories: selectedMeal.calories,
+                      protein: selectedMeal.protein,
+                      carbs: selectedMeal.carbs,
+                      fats: selectedMeal.fats,
+                      details: selectedMeal.details || []
+                    }
+              } 
               readOnly={false}
               onSave={handleUpdateMeal}
             />

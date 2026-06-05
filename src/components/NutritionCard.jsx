@@ -65,10 +65,13 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
   };
 
   const handleSaveAll = () => {
-    if (data && !data.foods) {
+    if (editableFoods.length === 1) {
       onSave(editableFoods[0]);
     } else {
-      onSave(editableFoods);
+      onSave({
+        ...computedData,
+        details: { isMulti: true, foods: editableFoods }
+      });
     }
   };
 
@@ -78,7 +81,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
   const totalFat = editableFoods.reduce((sum, f) => sum + (f.fats || 0), 0);
 
   const computedData = {
-    foodName: editableFoods.length === 1 ? editableFoods[0].foodName : `今日饮食 (${editableFoods.length}项)`,
+    foodName: editableFoods.length === 1 ? editableFoods[0].foodName : `综合餐食 (${editableFoods.length}项)`,
     calories: totalCals,
     protein: totalPro,
     carbs: totalCar,
