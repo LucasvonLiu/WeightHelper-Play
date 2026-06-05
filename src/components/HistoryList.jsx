@@ -50,28 +50,27 @@ export default function HistoryList({ goal, token, timezone }) {
     }
   };
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation(); // 阻止冒泡
+  const handleDelete = (id, e) => {
+    e.stopPropagation();
     if (!window.confirm('确认删除该记录吗？')) return;
     
-    // 乐观更新，立即从列表中移除并重新计算卡路里（近似计算）
+    const mealToDelete = meals.find(m => m.id === id);
+    if (!mealToDelete) return;
+
+    // 极致乐观更新：立刻删掉列表里的记录，同时立刻扣减总热量和营养素
     setMeals(prev => prev.filter(m => m.id !== id));
+    setTotals(prev => ({
+      calories: Math.max(0, prev.calories - (mealToDelete.calories || 0)),
+      protein: Math.max(0, prev.protein - (mealToDelete.protein || 0)),
+      carbs: Math.max(0, prev.carbs - (mealToDelete.carbs || 0)),
+      fats: Math.max(0, prev.fats - (mealToDelete.fats || 0))
+    }));
     
-    try {
-      const res = await fetch(`/api/meals/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        fetchHistory(false);
-      } else {
-        alert("删除失败");
-        fetchHistory(false);
-      }
-    } catch (err) {
-      console.error(err);
-      fetchHistory(false);
-    }
+    // 异步发给后端，不管成功失败也不重新加载了（代码最少，体感最快）
+    fetch(`/api/meals/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).catch(console.error);
   };
 
   const handleUpdateMeal = async (updatedMeal) => {
