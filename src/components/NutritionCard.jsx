@@ -3,14 +3,17 @@ import React, { useState, useEffect } from 'react';
 export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnly }) {
   const [posterUrl, setPosterUrl] = useState(null);
   
-  const [editableFoods, setEditableFoods] = useState([]);
-  const [portions, setPortions] = useState([]);
+  const [editableFoods, setEditableFoods] = useState(() => data?.foods || (data ? [data] : []));
+  const [portions, setPortions] = useState(() => (data?.foods || (data ? [data] : [])).map(() => 1));
+
+  const dataStr = JSON.stringify(data);
 
   useEffect(() => {
-    const foods = data?.foods || (data ? [data] : []);
+    const parsedData = JSON.parse(dataStr);
+    const foods = parsedData?.foods || (parsedData ? [parsedData] : []);
     setEditableFoods(foods);
     setPortions(foods.map(() => 1));
-  }, [data]);
+  }, [dataStr]);
 
   if (!editableFoods.length) return null;
 
