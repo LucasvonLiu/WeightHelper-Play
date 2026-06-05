@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnly, isSaving }) {
+export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnly, isSaving, goal }) {
   const [posterUrl, setPosterUrl] = useState(null);
   
   const [editableFoods, setEditableFoods] = useState(() => data?.foods || (data ? [data] : []));
@@ -242,53 +242,10 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
   const carbsPct = getPercentage(totalCar);
   const fatsPct = getPercentage(totalFat);
 
-  const C = 226.19;
-  const pOffset = C - (proteinPct / 100) * C;
-  const cOffset = C - (carbsPct / 100) * C;
-  const fOffset = C - (fatsPct / 100) * C;
-
-  const donutLabels = [];
-  let prevRightY = null;
-  let prevLeftY = null;
-
-  [
-    { pct: proteinPct, label: "蛋白质", value: totalPro, color: "#A3BCA7" },
-    { pct: carbsPct, label: "碳水", value: totalCar, color: "#D0D0C8" },
-    { pct: fatsPct, label: "脂肪", value: totalFat, color: "#E6DFD3" }
-  ].reduce((startPct, item) => {
-    if (item.pct > 0) {
-      const midPct = startPct + item.pct / 2;
-      const angle = (-Math.PI / 2) + (midPct / 100) * 2 * Math.PI;
-      const cx = 100, cy = 60, R = 36;
-      
-      const x1 = cx + (R + 4) * Math.cos(angle);
-      const y1 = cy + (R + 4) * Math.sin(angle);
-      
-      let x2 = cx + (R + 16) * Math.cos(angle);
-      let y2 = cy + (R + 16) * Math.sin(angle);
-      
-      const isRight = Math.cos(angle) >= 0;
-      
-      if (isRight) {
-        if (prevRightY !== null && Math.abs(y2 - prevRightY) < 32) {
-          y2 = prevRightY + (y2 >= prevRightY ? 32 : -32);
-        }
-        prevRightY = y2;
-      } else {
-        if (prevLeftY !== null && Math.abs(y2 - prevLeftY) < 32) {
-          y2 = prevLeftY + (y2 >= prevLeftY ? 32 : -32);
-        }
-        prevLeftY = y2;
-      }
-
-      const x3 = isRight ? x2 + 12 : x2 - 12;
-      const textX = isRight ? x3 + 6 : x3 - 6;
-      const textAnchor = isRight ? "start" : "end";
-
-      donutLabels.push({ x1, y1, x2, y2, x3, textX, textY: y2, isRight, ...item });
-    }
-    return startPct + item.pct;
-  }, 0);
+  const C_macro = 2 * Math.PI * 52;
+  const pOffset_macro = C_macro - (proteinPct / 100) * C_macro;
+  const cOffset_macro = C_macro - (carbsPct / 100) * C_macro;
+  const fOffset_macro = C_macro - (fatsPct / 100) * C_macro;
 
   return (
     <div className="nutrition-card fade-in" style={styles.container}>
@@ -300,28 +257,31 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
         <div style={styles.calorieCircle}>
           <span style={styles.calorieValue}>{computedData.calories}</span>
           <span style={styles.calorieUnit}>kcal</span>
+          {goal && (
+             <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+               占总量 {Math.round((computedData.calories / goal) * 100)}%
+             </span>
+          )}
         </div>
         
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <svg width="100%" height="120" viewBox="-10 0 220 120" style={{ overflow: 'visible' }}>
-            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#f0f0f0" strokeWidth="8" />
-            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#A3BCA7" strokeWidth="8" strokeDasharray={C} strokeDashoffset={pOffset} transform="rotate(-90 100 60)" strokeLinecap="round" />
-            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#D0D0C8" strokeWidth="8" strokeDasharray={C} strokeDashoffset={cOffset} transform={`rotate(${-90 + (proteinPct/100)*360} 100 60)`} strokeLinecap="round" />
-            <circle cx="100" cy="60" r="36" fill="transparent" stroke="#E6DFD3" strokeWidth="8" strokeDasharray={C} strokeDashoffset={fOffset} transform={`rotate(${-90 + ((proteinPct+carbsPct)/100)*360} 100 60)`} strokeLinecap="round" />
-            
-            {donutLabels.map((l, i) => (
-              <g key={i}>
-                <polyline points={`${l.x1},${l.y1} ${l.x2},${l.y2} ${l.x3},${l.y2}`} fill="none" stroke={l.color} strokeWidth="1.5" strokeLinejoin="round"/>
-                <circle cx={l.x1} cy={l.y1} r="3" fill={l.color} stroke="var(--card-bg)" strokeWidth="1.5" />
-                <text x={l.textX} y={l.textY - 4} fill="var(--text-secondary)" fontSize="11" textAnchor={l.textAnchor}>
-                  {l.label} <tspan fill="var(--text-primary)" fontWeight="600">{l.value}g</tspan>
-                </text>
-                <text x={l.textX} y={l.textY + 12} fill="var(--text-secondary)" fontSize="12" fontWeight="500" textAnchor={l.textAnchor}>
-                  {l.pct}%
-                </text>
-              </g>
-            ))}
+        <div style={styles.macrosCircle}>
+          <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
+            <circle cx="60" cy="60" r="52" fill="transparent" stroke="#f0f0f0" strokeWidth="6" />
+            <circle cx="60" cy="60" r="52" fill="transparent" stroke="#A3BCA7" strokeWidth="6" strokeDasharray={C_macro} strokeDashoffset={pOffset_macro} transform="rotate(-90 60 60)" strokeLinecap="round" />
+            <circle cx="60" cy="60" r="52" fill="transparent" stroke="#D0D0C8" strokeWidth="6" strokeDasharray={C_macro} strokeDashoffset={cOffset_macro} transform={`rotate(${-90 + (proteinPct/100)*360} 60 60)`} strokeLinecap="round" />
+            <circle cx="60" cy="60" r="52" fill="transparent" stroke="#E6DFD3" strokeWidth="6" strokeDasharray={C_macro} strokeDashoffset={fOffset_macro} transform={`rotate(${-90 + ((proteinPct+carbsPct)/100)*360} 60 60)`} strokeLinecap="round" />
           </svg>
+          <div style={{ zIndex: 1, display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{width: 6, height: 6, backgroundColor: '#A3BCA7', borderRadius: '50%'}}></div>蛋 {totalPro}g ({proteinPct}%)
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{width: 6, height: 6, backgroundColor: '#D0D0C8', borderRadius: '50%'}}></div>碳 {totalCar}g ({carbsPct}%)
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{width: 6, height: 6, backgroundColor: '#E6DFD3', borderRadius: '50%'}}></div>脂 {totalFat}g ({fatsPct}%)
+            </div>
+          </div>
         </div>
       </div>
 
@@ -487,16 +447,16 @@ const styles = {
   },
   mainStats: {
     display: 'flex',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    gap: '20px',
     marginBottom: '32px',
     backgroundColor: 'var(--bg-color)',
-    padding: '24px',
+    padding: '24px 12px',
     borderRadius: '24px',
   },
   calorieCircle: {
-    width: '110px',
-    height: '110px',
+    width: '120px',
+    height: '120px',
     borderRadius: '50%',
     backgroundColor: 'var(--card-bg)',
     display: 'flex',
@@ -504,19 +464,32 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     boxShadow: 'var(--shadow-sm)',
-    border: '4px solid var(--accent-green)',
+    border: '6px solid var(--accent-green)',
     flexShrink: 0
   },
   calorieValue: {
-    fontSize: '32px',
+    fontSize: '28px',
     fontWeight: '700',
     color: 'var(--accent-green)',
     lineHeight: '1',
   },
   calorieUnit: {
-    fontSize: '14px',
+    fontSize: '12px',
     color: 'var(--text-secondary)',
     marginTop: '4px',
+  },
+  macrosCircle: {
+    width: '120px',
+    height: '120px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--card-bg)',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: 'var(--shadow-sm)',
+    flexShrink: 0
   },
   foodList: {
     display: 'flex',

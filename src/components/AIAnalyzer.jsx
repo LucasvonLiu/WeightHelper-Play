@@ -33,11 +33,10 @@ export default function AIAnalyzer({ imageUrl }) {
                 <p key={i} style={{
                   ...styles.loadingText,
                   opacity: i === logs.length - 1 ? 1 : 0.6,
-                  color: 'var(--accent-green)',
-                  textShadow: '0 1px 4px rgba(255,255,255,0.6)',
+                  color: '#333',
                   transition: 'all 0.3s ease',
-                  fontSize: '14px',
-                  fontWeight: i === logs.length - 1 ? '600' : '500'
+                  fontSize: '13px',
+                  fontWeight: i === logs.length - 1 ? '600' : '400'
                 }}>
                   {log}
                 </p>
@@ -57,8 +56,8 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100vh',
-    paddingBottom: '10vh'
+    height: 'calc(100vh - 160px)',
+    marginTop: '0'
   },
   imageWrapper: {
     width: '100%',
