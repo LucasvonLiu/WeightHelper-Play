@@ -25,6 +25,11 @@
   padding: 0;
 }
 
+html {
+  background-color: var(--bg-color);
+  min-height: 100vh;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-color);
@@ -38,6 +43,8 @@ body {
   max-width: 480px; /* Mobile width constraint for web */
   margin: 0 auto;
   box-sizing: border-box;
+  min-height: 100vh;
+  background-color: var(--bg-color);
 }
 
 h1,
