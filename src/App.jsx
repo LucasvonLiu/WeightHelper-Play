@@ -14,6 +14,7 @@ function App() {
   const [currentImage, setCurrentImage] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username'));
@@ -165,6 +166,7 @@ function App() {
 
   const handleSaveMeal = async (mealDataArray) => {
     try {
+      setIsSaving(true);
       const foodsToSave = Array.isArray(mealDataArray) ? mealDataArray : [mealDataArray];
       
       const promises = foodsToSave.map(mealData => 
@@ -192,6 +194,8 @@ function App() {
     } catch (err) {
       console.error(err);
       alert("保存出错");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -232,6 +236,7 @@ function App() {
               data={analysisResult} 
               onReset={handleReset} 
               onSave={handleSaveMeal}
+              isSaving={isSaving}
             />
           )}
         </>

@@ -29,12 +29,12 @@ export default function HistoryList({ goal, token, timezone }) {
   const weekDates = getPast7Days(timezone);
 
   useEffect(() => {
-    fetchHistory();
+    fetchHistory(true);
   }, [selectedDate, timezone]);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (showFullScreenLoading = false) => {
     try {
-      setLoading(true);
+      if (showFullScreenLoading) setLoading(true);
       const res = await fetch(`/api/meals?date=${selectedDate}&tz=${timezone}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -46,34 +46,36 @@ export default function HistoryList({ goal, token, timezone }) {
     } catch (error) {
       console.error("获取记录失败:", error);
     } finally {
-      setLoading(false);
+      if (showFullScreenLoading) setLoading(false);
     }
   };
 
   const handleDelete = async (id, e) => {
     e.stopPropagation(); // 阻止冒泡
     if (!window.confirm('确认删除该记录吗？')) return;
+    
+    // 乐观更新，立即从列表中移除并重新计算卡路里（近似计算）
+    setMeals(prev => prev.filter(m => m.id !== id));
+    
     try {
-      setLoading(true);
       const res = await fetch(`/api/meals/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        fetchHistory();
+        fetchHistory(false);
       } else {
         alert("删除失败");
-        setLoading(false);
+        fetchHistory(false);
       }
     } catch (err) {
       console.error(err);
-      setLoading(false);
+      fetchHistory(false);
     }
   };
 
   const handleUpdateMeal = async (updatedMeal) => {
     try {
-      setLoading(true);
       const res = await fetch(`/api/meals/${selectedMeal.id}`, {
         method: 'PUT',
         headers: { 
@@ -84,14 +86,12 @@ export default function HistoryList({ goal, token, timezone }) {
       });
       if (res.ok) {
         setSelectedMeal(null);
-        fetchHistory();
+        fetchHistory(false);
       } else {
         alert("更新失败");
-        setLoading(false);
       }
     } catch (err) {
       console.error(err);
-      setLoading(false);
     }
   };
 

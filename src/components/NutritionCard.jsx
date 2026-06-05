@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnly }) {
+export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnly, isSaving }) {
   const [posterUrl, setPosterUrl] = useState(null);
   
   const [editableFoods, setEditableFoods] = useState(() => data?.foods || (data ? [data] : []));
@@ -407,7 +407,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
 
       {!readOnly && (
         <div style={styles.actions}>
-          <button style={styles.primaryBtn} onClick={handleSaveAll}>
+          <button style={{...styles.primaryBtn, opacity: isSaving ? 0.7 : 1}} onClick={handleSaveAll} disabled={isSaving}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -420,7 +420,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
               <path d="M12 18h.01"></path>
               <path d="M16 18h.01"></path>
             </svg>
-            {onReset ? '归档保存' : '保存修改'}
+            {isSaving ? '保存中...' : (onReset ? '归档保存' : '保存修改')}
           </button>
           <button style={styles.posterBtn} onClick={() => generatePoster(false)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
