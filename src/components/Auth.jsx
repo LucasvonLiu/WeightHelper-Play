@@ -39,11 +39,24 @@ export default function Auth({ onAuthSuccess }) {
       {showIntro && (
         <div style={styles.modalOverlay} onClick={() => setShowIntro(false)}>
           <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div style={styles.modalIcon}>📸</div>
+            <div style={styles.modalIcon}>✨</div>
             <h3 style={styles.modalTitle}>欢迎来到 WeightHelper</h3>
-            <p style={styles.modalText}>
-              只需拍下食物照片，AI 即可帮您秒算卡路里与三大营养素，轻松管理日常饮食！
-            </p>
+            <div style={{textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '16px', margin: '24px 0 32px 0', padding: '0 12px'}}>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'flex-start'}}>
+                <span style={{fontSize: '20px', lineHeight: '1.2'}}>🎯</span>
+                <div>
+                  <div style={{fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', fontSize: '15px'}}>干什么？</div>
+                  <div style={{fontSize: '14px', color: 'var(--text-secondary)'}}>帮你秒算卡路里与营养素的 AI 助手。</div>
+                </div>
+              </div>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'flex-start'}}>
+                <span style={{fontSize: '20px', lineHeight: '1.2'}}>📸</span>
+                <div>
+                  <div style={{fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', fontSize: '15px'}}>怎么用？</div>
+                  <div style={{fontSize: '14px', color: 'var(--text-secondary)'}}>登录账号后，随手拍一张食物照片即可！</div>
+                </div>
+              </div>
+            </div>
             <button style={styles.modalBtn} onClick={() => setShowIntro(false)}>
               开始使用
             </button>
