@@ -6,6 +6,7 @@ import HistoryList from './components/HistoryList';
 import BottomNav from './components/BottomNav';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
+import InstallPrompt from './components/InstallPrompt';
 import './index.css';
 
 function App() {
@@ -201,6 +202,7 @@ function App() {
 
   return (
     <div className="app-wrapper">
+      <InstallPrompt />
       {/* 顶部简单的状态栏 */}
       <div style={{ padding: '40px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
