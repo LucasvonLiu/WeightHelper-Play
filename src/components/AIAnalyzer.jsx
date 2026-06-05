@@ -23,28 +23,32 @@ export default function AIAnalyzer({ imageUrl }) {
     <div className="analyzer-container fade-in" style={styles.container}>
       <div style={styles.imageWrapper}>
         <img src={imageUrl} alt="Uploaded food" style={styles.image} />
-        <div style={styles.frostedOverlay}></div>
-      </div>
-      <div style={styles.loadingInfo}>
-        <h3 style={{fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{animation: 'pulse 1.5s infinite opacity'}}>
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 16v-4"></path>
-            <path d="M12 8h.01"></path>
-          </svg>
-          Thinking...
-        </h3>
-        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px', width: '100%', maxWidth: '300px'}}>
-          {logs.map((log, i) => (
-            <p key={i} style={{
-              ...styles.loadingText,
-              opacity: i === logs.length - 1 ? 1 : 0.5,
-              color: i === logs.length - 1 ? 'var(--text-primary)' : 'var(--text-secondary)',
-              transition: 'all 0.3s ease'
-            }}>
-              {log}
-            </p>
-          ))}
+        <div style={styles.frostedOverlay}>
+          <div style={styles.loadingInfo}>
+            <h3 style={{fontSize: '32px', fontWeight: '800', color: 'var(--accent-green)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', textShadow: '0 2px 10px rgba(255,255,255,0.8)'}}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{animation: 'pulse 1.5s infinite opacity'}}>
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+              Thinking...
+            </h3>
+            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%', maxWidth: '300px'}}>
+              {logs.map((log, i) => (
+                <p key={i} style={{
+                  ...styles.loadingText,
+                  opacity: i === logs.length - 1 ? 1 : 0.6,
+                  color: i === logs.length - 1 ? '#222' : '#555',
+                  textShadow: '0 1px 4px rgba(255,255,255,0.6)',
+                  transition: 'all 0.3s ease',
+                  fontSize: '14px',
+                  fontWeight: i === logs.length - 1 ? '600' : '500'
+                }}>
+                  {log}
+                </p>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -77,12 +81,16 @@ const styles = {
   frostedOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(163, 188, 167, 0.4)',
+    backgroundColor: 'rgba(235, 245, 238, 0.7)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '24px',
   },
   loadingInfo: {
-    marginTop: '40px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',

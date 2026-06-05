@@ -333,7 +333,7 @@ export default function NutritionCard({ imageUrl, data, onReset, onSave, readOnl
             {!readOnly && (
               <div style={styles.portionContainer}>
                 <div style={styles.portionChips}>
-                  {[
+                  {!expandedPortions[index] && [
                     { label: '1/4 份', value: 0.25 },
                     { label: '1/2 份', value: 0.5 },
                     { label: '3/4 份', value: 0.75 },
