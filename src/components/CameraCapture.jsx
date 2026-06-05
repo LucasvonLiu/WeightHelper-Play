@@ -3,14 +3,6 @@ import React, { useRef, useState } from 'react';
 export default function CameraCapture({ onCapture, modelName, token }) {
   const fileInputRef = useRef(null);
   const [previewImage, setPreviewImage] = useState(null);
-  
-  const [foodName, setFoodName] = useState('');
-  const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit] = useState('份');
-  const [isRecognizing, setIsRecognizing] = useState(false);
-
-  // 'select' 为滚轮选择模式, 'keyboard' 为自由输入模式
-  const [inputMode, setInputMode] = useState('select');
 
   const handleAreaClick = () => {
     if (fileInputRef.current) {
@@ -56,11 +48,6 @@ export default function CameraCapture({ onCapture, modelName, token }) {
 
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
         setPreviewImage(compressedBase64);
-        
-        // 每次重新选图重置默认值
-        setFoodName('');
-        setQuantity('1');
-        setUnit('份');
       };
       img.src = event.target.result;
     };
@@ -89,48 +76,12 @@ export default function CameraCapture({ onCapture, modelName, token }) {
     img.src = previewImage;
   };
 
-  const handleAnalyze = async () => {
-    if (!foodName) {
-      setIsRecognizing(true);
-      try {
-        const res = await fetch('/api/recognize_basic', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ image: previewImage })
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setFoodName(data.name || '');
-          setQuantity(data.quantity ? String(data.quantity) : '1');
-          setUnit(data.unit || '份');
-        } else {
-          alert('智能识别失败，请直接手动输入');
-        }
-      } catch (e) {
-        console.error(e);
-        alert('智能识别失败，请直接手动输入');
-      } finally {
-        setIsRecognizing(false);
-      }
-      return; 
-    }
-
-    onCapture(previewImage, { foodName, quantity, unit });
+  const handleAnalyze = () => {
+    onCapture(previewImage, {});
   };
 
   const handleCancel = () => {
     setPreviewImage(null);
-    setFoodName('');
-    setQuantity('1');
-    setUnit('份');
-  };
-
-  const toggleInputMode = () => {
-    setInputMode(prev => prev === 'select' ? 'keyboard' : 'select');
   };
 
   if (previewImage) {
@@ -152,7 +103,7 @@ export default function CameraCapture({ onCapture, modelName, token }) {
           {/* 前景图片 */}
           <img src={previewImage} alt="preview" style={styles.previewImage} />
           
-          <button onClick={handleRotate} style={styles.rotateBtn} disabled={isRecognizing}>
+          <button onClick={handleRotate} style={styles.rotateBtn}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
               <path d="M3 3v5h5"/>
@@ -160,82 +111,10 @@ export default function CameraCapture({ onCapture, modelName, token }) {
           </button>
         </div>
         
-        <div style={styles.formContainer}>
-          <div style={styles.formRow}>
-            <div style={{flex: 2}}>
-              <label style={styles.label}>名称</label>
-              <input 
-                type="text" 
-                value={foodName}
-                onChange={(e) => setFoodName(e.target.value)}
-                placeholder="如: 番茄炒蛋"
-                style={styles.input}
-                disabled={isRecognizing}
-              />
-            </div>
-            <div style={{flex: 1}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
-                <label style={{...styles.label, marginBottom: 0}}>数量</label>
-                {/* 键盘切换图标 */}
-                <svg onClick={toggleInputMode} style={{cursor: 'pointer', color: inputMode === 'keyboard' ? 'var(--accent-green)' : '#aaa'}} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
-                  <line x1="6" y1="8" x2="6.01" y2="8"></line>
-                  <line x1="10" y1="8" x2="10.01" y2="8"></line>
-                  <line x1="14" y1="8" x2="14.01" y2="8"></line>
-                  <line x1="18" y1="8" x2="18.01" y2="8"></line>
-                  <line x1="6" y1="12" x2="6.01" y2="12"></line>
-                  <line x1="10" y1="12" x2="10.01" y2="12"></line>
-                  <line x1="14" y1="12" x2="14.01" y2="12"></line>
-                  <line x1="18" y1="12" x2="18.01" y2="12"></line>
-                  <line x1="7" y1="16" x2="17" y2="16"></line>
-                </svg>
-              </div>
-              {inputMode === 'select' ? (
-                <select value={quantity} onChange={(e) => setQuantity(e.target.value)} style={styles.input} disabled={isRecognizing}>
-                  {[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}
-                </select>
-              ) : (
-                <input 
-                  type="number" 
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="1"
-                  style={styles.input}
-                  disabled={isRecognizing}
-                />
-              )}
-            </div>
-            <div style={{flex: 1}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
-                <label style={{...styles.label, marginBottom: 0}}>单位</label>
-              </div>
-              {inputMode === 'select' ? (
-                <select value={unit} onChange={(e) => setUnit(e.target.value)} style={styles.input} disabled={isRecognizing}>
-                  <option value="个">个</option>
-                  <option value="盘">盘</option>
-                  <option value="碗">碗</option>
-                  <option value="克">克</option>
-                  <option value="份">份</option>
-                  <option value="块">块</option>
-                </select>
-              ) : (
-                <input 
-                  type="text" 
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  placeholder="盘/个"
-                  style={styles.input}
-                  disabled={isRecognizing}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div style={{display: 'flex', gap: '12px', width: '100%'}}>
-          <button onClick={handleCancel} style={styles.secondaryBtn} disabled={isRecognizing}>重拍</button>
-          <button onClick={handleAnalyze} style={styles.primaryBtn} disabled={isRecognizing}>
-            {isRecognizing ? '正在智能识别...' : '分析'}
+        <div style={{display: 'flex', gap: '12px', width: '100%', marginTop: '20px'}}>
+          <button onClick={handleCancel} style={styles.secondaryBtn}>重拍</button>
+          <button onClick={handleAnalyze} style={styles.primaryBtn}>
+            开始分析
           </button>
         </div>
       </div>
