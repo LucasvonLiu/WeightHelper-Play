@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cd admin-dashboard && npm install && npm run build",
     "start": "node server.js",
     "lint": "eslint .",
     "preview": "vite preview"

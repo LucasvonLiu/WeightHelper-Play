@@ -63,6 +63,15 @@ let pgPool;
       `);
       
       await pgPool.query(`
+        CREATE TABLE IF NOT EXISTS admins (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(255) UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await pgPool.query(`
         CREATE TABLE IF NOT EXISTS meals (
           id SERIAL PRIMARY KEY,
           userId INTEGER,
@@ -92,6 +101,15 @@ let pgPool;
       
       await db.exec(`
         CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS admins (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           username TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
@@ -158,6 +176,19 @@ async function dbInsertAndGetId(query, params = []) {
   }
 }
 
+// 初始化默认管理员
+setTimeout(async () => {
+  try {
+    const adminExists = await dbGet('SELECT * FROM admins WHERE username = ?', ['admin']);
+    if (!adminExists) {
+      const hashedAdminPwd = await bcrypt.hash('admin123', 10);
+      await dbInsertAndGetId('INSERT INTO admins (username, password) VALUES (?, ?)', ['admin', hashedAdminPwd]);
+      console.log("🌟 默认管理员已创建，账号: admin，密码: admin123");
+    }
+  } catch (e) {
+    console.error("初始化默认管理员失败", e);
+  }
+}, 2000);
 
 // --- 鉴权中间件 ---
 const authenticateToken = (req, res, next) => {
@@ -662,6 +693,103 @@ app.post('/api/coach', authenticateToken, async (req, res) => {
     console.error("获取点评失败:", error);
     res.status(500).json({ error: "获取点评失败" });
   }
+});
+
+// --- 后台管理接口 ---
+const authenticateAdmin = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: '请先登录管理员账号' });
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err || decoded.role !== 'admin') return res.status(403).json({ error: '权限不足' });
+    req.admin = decoded;
+    next();
+  });
+};
+
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const admin = await dbGet('SELECT * FROM admins WHERE username = ?', [username]);
+    if (!admin) return res.status(400).json({ error: '用户名或密码错误' });
+    
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) return res.status(400).json({ error: '用户名或密码错误' });
+    
+    const token = jwt.sign({ adminId: admin.id, username: admin.username, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ success: true, token, username: admin.username });
+  } catch (error) {
+    res.status(500).json({ error: '登录失败' });
+  }
+});
+
+app.get('/api/admin/stats', authenticateAdmin, async (req, res) => {
+  try {
+    const usersCount = await dbGet('SELECT COUNT(*) as count FROM users');
+    const mealsCount = await dbGet('SELECT COUNT(*) as count FROM meals');
+    const tokensTotal = await dbGet('SELECT SUM(totalTokensUsed) as total FROM users');
+    res.json({
+      totalUsers: usersCount.count || 0,
+      totalMeals: mealsCount.count || 0,
+      totalTokens: tokensTotal.total || 0
+    });
+  } catch (err) { res.status(500).json({ error: '获取大盘数据失败' }); }
+});
+
+app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
+  try {
+    let users;
+    if (isPostgres) {
+      users = await pgPool.query('SELECT id, username, createdat as "createdAt", totalTokensUsed, goal, timezone FROM users ORDER BY createdat DESC').then(r => r.rows);
+    } else {
+      users = await db.all('SELECT id, username, createdAt, totalTokensUsed, goal, timezone FROM users ORDER BY createdAt DESC');
+    }
+    res.json(users);
+  } catch(err) { res.status(500).json({ error: '获取用户失败' }); }
+});
+
+app.delete('/api/admin/users/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await dbRun('DELETE FROM meals WHERE userId = ?', [id]);
+    await dbRun('DELETE FROM users WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: '删除用户失败' }); }
+});
+
+app.get('/api/admin/meals', authenticateAdmin, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    
+    let meals;
+    let totalCount;
+    if (isPostgres) {
+      meals = await pgPool.query('SELECT m.id, m.userid as "userId", u.username, m.foodname as "foodName", m.calories, m.image, m.createdat as "createdAt" FROM meals m LEFT JOIN users u ON m.userid = u.id ORDER BY m.createdat DESC LIMIT $1 OFFSET $2', [limit, offset]).then(r => r.rows);
+      totalCount = await pgPool.query('SELECT COUNT(*) as count FROM meals').then(r => r.rows[0].count);
+    } else {
+      meals = await db.all('SELECT m.id, m.userId, u.username, m.foodName, m.calories, m.image, m.createdAt FROM meals m LEFT JOIN users u ON m.userId = u.id ORDER BY m.createdAt DESC LIMIT ? OFFSET ?', [limit, offset]);
+      const tc = await db.get('SELECT COUNT(*) as count FROM meals');
+      totalCount = tc.count;
+    }
+    res.json({ data: meals, total: totalCount, page, limit });
+  } catch(err) { res.status(500).json({ error: '获取记录失败' }); }
+});
+
+app.delete('/api/admin/meals/:id', authenticateAdmin, async (req, res) => {
+  try {
+    await dbRun('DELETE FROM meals WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: '删除记录失败' }); }
+});
+
+// 静态托管 Admin 前端 (生产环境)
+app.use('/admin', express.static(path.join(__dirname, 'admin-dashboard', 'dist')));
+
+app.get('/admin/*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin-dashboard', 'dist', 'index.html'));
 });
 
 // 所有其他未匹配的 GET 请求，都返回前端的 index.html (SPA 路由支持)
