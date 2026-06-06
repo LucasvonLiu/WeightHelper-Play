@@ -788,7 +788,7 @@ app.delete('/api/admin/meals/:id', authenticateAdmin, async (req, res) => {
 // 静态托管 Admin 前端 (生产环境)
 app.use('/admin', express.static(path.join(__dirname, 'admin-dashboard', 'dist')));
 
-app.get('/admin/*', (req, res) => {
+app.use('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin-dashboard', 'dist', 'index.html'));
 });
 
