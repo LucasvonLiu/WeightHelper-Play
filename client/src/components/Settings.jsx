@@ -1,21 +1,46 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useApp } from '../context/AppContext.jsx';
 
-export default function Settings({ currentGoal, currentTimezone, onSavePreferences }) {
+export default function Settings() {
+  const { t, i18n } = useTranslation();
+  const { 
+    goal: currentGoal, 
+    timezone: currentTimezone, 
+    handleSavePreferences, 
+    handleDeleteAccount 
+  } = useApp();
+
   const [goal, setGoal] = useState(currentGoal);
   const [tz, setTz] = useState(currentTimezone || 'Asia/Shanghai');
+  const [lang, setLang] = useState(i18n.language || 'zh');
 
   const handleSave = () => {
-    onSavePreferences(Number(goal), tz);
-    alert("设置已保存！");
+    handleSavePreferences(Number(goal), tz);
+    i18n.changeLanguage(lang);
+    localStorage.setItem('weighthelper_lang', lang);
+    alert(lang === 'zh' ? "设置已保存！" : "Settings saved!");
   };
 
   return (
     <div className="fade-in" style={styles.container}>
-      <h2 style={styles.title}>偏好设置</h2>
+      <h2 style={styles.title}>{t('settings.title')}</h2>
       
       <div style={styles.card}>
-        <h3 style={styles.cardTitle}>每日摄入目标 (kcal)</h3>
-        <p style={styles.cardDesc}>根据您的减脂或增肌需求，设定一个卡路里上限。</p>
+        <h3 style={styles.cardTitle}>{t('settings.langLabel')}</h3>
+        <div style={styles.inputGroup}>
+          <select 
+            value={lang} 
+            onChange={(e) => setLang(e.target.value)}
+            style={styles.select}
+          >
+            <option value="zh">简体中文 (Simplified Chinese)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <h3 style={{...styles.cardTitle, marginTop: '24px'}}>{t('settings.goalLabel')}</h3>
+        <p style={styles.cardDesc}>{t('settings.goalDesc')}</p>
         
         <div style={styles.inputGroup}>
           <input 
@@ -24,11 +49,11 @@ export default function Settings({ currentGoal, currentTimezone, onSavePreferenc
             onChange={(e) => setGoal(e.target.value)}
             style={styles.input}
           />
-          <span style={styles.unit}>大卡</span>
+          <span style={styles.unit}>{t('settings.goalUnit')}</span>
         </div>
 
-        <h3 style={styles.cardTitle} style={{marginTop: '24px'}}>时区设置</h3>
-        <p style={styles.cardDesc}>选择您所在的时区，确保三餐记录日期准确。</p>
+        <h3 style={{...styles.cardTitle, marginTop: '24px'}}>{t('settings.timezoneLabel')}</h3>
+        <p style={styles.cardDesc}>{t('settings.timezoneDesc')}</p>
 
         <div style={styles.inputGroup}>
           <select 
@@ -44,7 +69,15 @@ export default function Settings({ currentGoal, currentTimezone, onSavePreferenc
         </div>
 
         <button style={styles.saveBtn} onClick={handleSave}>
-          保存目标
+          {t('settings.saveBtn')}
+        </button>
+      </div>
+
+      <div style={{ ...styles.card, marginTop: '24px', borderColor: '#ffcccc', borderWidth: '1px', borderStyle: 'solid' }}>
+        <h3 style={{ ...styles.cardTitle, color: '#ff4d4f' }}>{t('settings.dangerZone')}</h3>
+        <p style={styles.cardDesc}>{t('settings.deleteDesc')}</p>
+        <button style={styles.deleteBtn} onClick={handleDeleteAccount}>
+          {t('settings.deleteBtn')}
         </button>
       </div>
     </div>
@@ -115,6 +148,18 @@ const styles = {
     fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
+  },
+  deleteBtn: {
+    width: '100%',
+    backgroundColor: '#fff',
+    color: '#ff4d4f',
+    border: '2px solid #ff4d4f',
+    padding: '16px',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   select: {
     flex: 1,

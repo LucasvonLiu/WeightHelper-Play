@@ -1,0 +1,72 @@
+[
+  {
+    "imagePath": "apple.png",
+    "foodName": "苹果",
+    "quantity": 1,
+    "unit": "个",
+    "groundTruth": { "calories": 95, "protein": 1, "carbs": 25, "fats": 0 }
+  },
+  {
+    "imagePath": "egg.png",
+    "foodName": "水煮蛋",
+    "quantity": 1,
+    "unit": "个",
+    "groundTruth": { "calories": 78, "protein": 6, "carbs": 1, "fats": 5 }
+  },
+  {
+    "imagePath": "steak.png",
+    "foodName": "煎牛排",
+    "quantity": 1,
+    "unit": "块",
+    "groundTruth": { "calories": 250, "protein": 26, "carbs": 0, "fats": 16 }
+  },
+  {
+    "imagePath": "rice.png",
+    "foodName": "白米饭",
+    "quantity": 1,
+    "unit": "碗",
+    "groundTruth": { "calories": 130, "protein": 3, "carbs": 28, "fats": 0 }
+  },
+  {
+    "imagePath": "milk.png",
+    "foodName": "牛奶",
+    "quantity": 1,
+    "unit": "杯",
+    "groundTruth": { "calories": 120, "protein": 8, "carbs": 12, "fats": 5 }
+  },
+  {
+    "imagePath": "salad.png",
+    "foodName": "蔬菜沙拉",
+    "quantity": 1,
+    "unit": "盘",
+    "groundTruth": { "calories": 150, "protein": 3, "carbs": 10, "fats": 11 }
+  },
+  {
+    "imagePath": "pizza.png",
+    "foodName": "比萨",
+    "quantity": 1,
+    "unit": "片",
+    "groundTruth": { "calories": 285, "protein": 12, "carbs": 36, "fats": 10 }
+  },
+  {
+    "imagePath": "chicken_breast.png",
+    "foodName": "煎鸡胸肉",
+    "quantity": 1,
+    "unit": "块",
+    "groundTruth": { "calories": 165, "protein": 31, "carbs": 0, "fats": 4 }
+  },
+  {
+    "imagePath": "banana.png",
+    "foodName": "香蕉",
+    "quantity": 1,
+    "unit": "根",
+    "groundTruth": { "calories": 105, "protein": 1, "carbs": 27, "fats": 0 }
+  },
+  {
+    "imagePath": "salmon.png",
+    "foodName": "煎三文鱼",
+    "quantity": 1,
+    "unit": "块",
+    "groundTruth": { "calories": 208, "protein": 22, "carbs": 0, "fats": 13 }
+  }
+]

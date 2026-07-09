@@ -3,6 +3,7 @@ import ProPaywall from './ProPaywall';
 import moment from 'moment-timezone';
 import NutritionCard from './NutritionCard';
 import CalendarModal from './CalendarModal';
+import PixelatedImage from './PixelatedImage';
 
 const getPast7Days = (tz) => {
   const dates = [];
@@ -202,7 +203,7 @@ export default function HistoryList({ goal, token, timezone }) {
               <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
                 <div style={{width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f5f5f5', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                   {meal.image ? (
-                    <img src={meal.image} alt={meal.foodName} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                    <PixelatedImage src={meal.image} alt={meal.foodName} style={{width: '100%', height: '100%'}} blocksCount={20} />
                   ) : (
                     <span style={{fontSize: '20px'}}>🍽️</span>
                   )}
@@ -264,7 +265,7 @@ export default function HistoryList({ goal, token, timezone }) {
             </button>
             {selectedMeal.image && (
               <div style={{width: '100%', height: '200px', overflow: 'hidden', borderRadius: '24px 24px 0 0', flexShrink: 0}}>
-                <img src={selectedMeal.image} alt={selectedMeal.foodName} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                <PixelatedImage src={selectedMeal.image} alt={selectedMeal.foodName} style={{width: '100%', height: '100%'}} blocksCount={45} />
               </div>
             )}
             <NutritionCard 

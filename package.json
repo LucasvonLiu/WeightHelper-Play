@@ -1,39 +1,24 @@
 {
-  "name": "weighthelper",
+  "name": "weighthelper-root",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "client",
+    "server",
+    "server/admin-dashboard"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && cd admin-dashboard && npm install && npm run build",
-    "start": "node server.js",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@vitejs/plugin-react": "^6.0.1",
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "moment-timezone": "^0.6.2",
-    "pg": "^8.21.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "vite": "^8.0.12"
+    "bootstrap": "npm install && npm run install:all",
+    "install:all": "npm install --prefix client && npm install --prefix server && npm install --prefix server/admin-dashboard",
+    "build": "npm run build --prefix client && npm run build --prefix server/admin-dashboard",
+    "start": "npm run start --prefix server",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "test:regression": "node scripts/test-api-regressions.js"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-basic-ssl": "^2.3.0",
-    "eslint": "^10.3.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.6.0"
+    "concurrently": "^8.2.2"
   }
 }
